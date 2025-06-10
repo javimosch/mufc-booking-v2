@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { WebUIUser, MatchEvent, User } = require('../../../utils/schemas');
 const GenericCLI = require('../../../src/cli.js');
-const ProcessService = require('../../../utils/process-service');
 
 // Load environment variables
 require('dotenv').config();
