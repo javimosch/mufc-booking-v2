@@ -11,6 +11,7 @@
     "ui": "node src/cli.js --ui",
     "web": "cd interfaces/webui && npm start",
     "dev": "nodemon src/cli.js",
+    "dev:web":"cd interfaces/webui && npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

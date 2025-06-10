@@ -5,6 +5,7 @@ class DatabaseManager {
   constructor() {
     this.connection = null;
     this.isConnected = false;
+    this.callbacks = [];
   }
 
   async connect() {
@@ -18,6 +19,7 @@ class DatabaseManager {
         throw new Error('MONGODB_URI environment variable is not set');
       }
 
+      console.log('Connecting to MongoDB...');
       this.connection = await mongoose.connect(mongoUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
@@ -25,10 +27,21 @@ class DatabaseManager {
 
       this.isConnected = true;
       console.log('✅ Connected to MongoDB successfully');
+      this.onConnect();
       return { success: true, message: 'Connected to database successfully' };
     } catch (error) {
       console.error('❌ Failed to connect to MongoDB:', error.message);
       return { success: false, error: error.message };
+    }
+  }
+
+  onConnect() {
+    this.callbacks.forEach(callback => callback());
+  }
+
+  on(event, callback) {
+    if (event === 'connected') {
+      this.callbacks.push(callback);
     }
   }
 

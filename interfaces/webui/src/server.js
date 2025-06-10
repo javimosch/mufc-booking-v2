@@ -1,3 +1,7 @@
+require('dotenv').config({
+    path:__dirname + '/../../../.env'
+});
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
@@ -5,6 +9,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { WebUIUser, MatchEvent, User } = require('../../../utils/schemas');
 const GenericCLI = require('../../../src/cli.js');
+const databaseManager = require('../../../utils/database');
+
+databaseManager.connect();
 
 // Load environment variables
 require('dotenv').config();
@@ -103,12 +110,14 @@ app.post('/api/login', async (req, res) => {
         const user = await WebUIUser.findOne({ email });
 
         if (!user) {
+            console.log('User not found');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
+            console.log('Password does not match');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
