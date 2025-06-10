@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUFC Booking - Embed</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <main class="main-content">
+            <div id="embed-section" class="card">
+                <div id="single-event-mode" style="display: none;">
+                    <h2 class="heading--section">📅 Match Event</h2>
+                    <div id="event-details"></div>
+                    <div class="form-group">
+                        <label class="label" for="nickname-input">Nickname</label>
+                        <input type="text" id="nickname-input" class="input" placeholder="Enter your nickname...">
+                    </div>
+                    <div class="form-group">
+                        <label class="label" for="embed-email-input">Email</label>
+                        <input type="email" id="embed-email-input" class="input" placeholder="Enter your email...">
+                    </div>
+                    <button id="join-btn" class="btn btn--primary">Join</button>
+                    <button id="unjoin-btn" class="btn btn--danger">Un-join</button>
+                </div>
+                <div id="multi-event-mode" style="display: none;">
+                    <h2 class="heading--section">📅 Match Events</h2>
+                    <div class="form-group">
+                        <input type="text" id="search-input" class="input" placeholder="Search events...">
+                    </div>
+                    <div id="events-list"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
