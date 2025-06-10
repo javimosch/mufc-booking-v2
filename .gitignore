@@ -1,2 +1,4 @@
+.opencode
+.cli*
 node_modules
 .env
