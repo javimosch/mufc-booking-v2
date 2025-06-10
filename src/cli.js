@@ -213,8 +213,8 @@ class GenericCLI {
     ];
     console.log('📋 Main Menu:');
     console.log();
-    choices.forEach(choice => {
-      console.log(`  ${choice.name}`);
+    choices.forEach((choice, index) => {
+      console.log(`  ${index + 1}. ${choice.name}`);
     });
     console.log();
     console.log(`💾 Storage: ${this.databaseConnected ? 'MongoDB' : 'File-based'}`);
