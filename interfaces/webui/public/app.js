@@ -18,6 +18,7 @@ class CLIWebUI {
         this.usersContent = document.getElementById('users-content');
         this.addEventBtn = document.getElementById('add-event-btn');
         this.addUserBtn = document.getElementById('add-user-btn');
+        this.publicEventLinksContent = document.getElementById('public-event-links-content');
 
         // Log elements
         this.logContainer = document.getElementById('log-container');
@@ -59,6 +60,9 @@ class CLIWebUI {
 
             const data = await response.json();
             this.token = data.token;
+            // Decode the token to get organizationId
+            const payload = JSON.parse(atob(data.token.split('.')[1]));
+            this.organizationId = payload.organizationId;
             this.loginSection.style.display = 'none';
             this.dashboardSection.style.display = 'grid';
             this.addLog('success', '✅ Login successful');
@@ -71,6 +75,45 @@ class CLIWebUI {
     async loadDashboard() {
         this.loadMatchEvents();
         this.loadUsers();
+        this.loadPublicEventLinks();
+    }
+
+    async loadPublicEventLinks() {
+        try {
+            // Assuming the organizationId can be retrieved from the logged-in user's token
+            // For now, we'll use a placeholder or fetch it if available in the token payload
+            // This needs to be properly handled on the backend to return organizationId with user data
+            const response = await fetch(`/api/public/match-events?organizationId=${this.organizationId}`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            if (!response.ok) throw new Error('Failed to load match events for public links');
+            const events = await response.json();
+            this.renderPublicEventLinks(events);
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
+    renderPublicEventLinks(events) {
+        if (events.length === 0) {
+            this.publicEventLinksContent.innerHTML = '<p>No public event links found.</p>';
+            return;
+        }
+        const list = document.createElement('ul');
+        events.forEach(event => {
+            // Assuming the organizationId is available in the event object or from the user's token
+            // For now, using a placeholder. This needs to be properly handled.
+            const organizationId = this.organizationId;
+            const publicLink = `${window.location.origin}/iframe?eventId=${event._id}&organizationId=${organizationId}`;
+            const item = document.createElement('li');
+            item.innerHTML = `
+                <span>${event.title}: </span>
+                <a href="${publicLink}" target="_blank">${publicLink}</a>
+            `;
+            list.appendChild(item);
+        });
+        this.publicEventLinksContent.innerHTML = '';
+        this.publicEventLinksContent.appendChild(list);
     }
 
     async loadMatchEvents() {
@@ -280,7 +323,7 @@ class CLIWebUI {
 
     showModal(title, message, onConfirm = null) {
         this.modalTitle.textContent = title;
-        this.modalMessage.textContent = message;
+        this.modalMessage.innerHTML = message;
         this.modal.style.display = 'flex';
         
         if (onConfirm) {
