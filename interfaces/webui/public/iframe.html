@@ -6,7 +6,7 @@
     <title>MUFC Booking - Embed</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="iframe-body">
     <div class="app-container">
         <main class="main-content">
             <div id="embed-section" class="card">
@@ -23,6 +23,10 @@
                     </div>
                     <button id="join-btn" class="btn btn--primary">Join</button>
                     <button id="unjoin-btn" class="btn btn--danger">Un-join</button>
+                    <div class="joined-users-section">
+                        <h3>Joined Users:</h3>
+                        <div id="joined-users-list"></div>
+                    </div>
                 </div>
                 <div id="multi-event-mode" style="display: none;">
                     <h2 class="heading--section">📅 Match Events</h2>

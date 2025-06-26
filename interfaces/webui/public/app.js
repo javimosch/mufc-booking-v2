@@ -105,15 +105,35 @@ class CLIWebUI {
             // For now, using a placeholder. This needs to be properly handled.
             const organizationId = this.organizationId;
             const publicLink = `${window.location.origin}/iframe?eventId=${event._id}&organizationId=${organizationId}`;
+            const iframeCode = `<iframe src="${publicLink}" width="600" height="400" frameborder="0"></iframe>`;
             const item = document.createElement('li');
             item.innerHTML = `
                 <span>${event.title}: </span>
                 <a href="${publicLink}" target="_blank">${publicLink}</a>
+                <div class="code-example">
+                    <textarea class="code-block" readonly>${iframeCode}</textarea>
+                    <button class="btn btn--secondary copy-btn" data-clipboard-target="${iframeCode}">Copy</button>
+                </div>
             `;
             list.appendChild(item);
         });
         this.publicEventLinksContent.innerHTML = '';
         this.publicEventLinksContent.appendChild(list);
+
+        // Add event listeners for copy buttons
+        document.querySelectorAll('.copy-btn').forEach(button => {
+            button.addEventListener('click', (event) => this.copyToClipboard(event));
+        });
+    }
+
+    copyToClipboard(event) {
+        const textToCopy = event.target.dataset.clipboardTarget;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            this.addLog('success', '✅ Copied to clipboard!');
+        }).catch(err => {
+            this.addLog('error', '❌ Failed to copy to clipboard.');
+            console.error('Error copying to clipboard:', err);
+        });
     }
 
     async loadMatchEvents() {
@@ -464,6 +484,7 @@ class EmbedUI {
         this.emailInput = document.getElementById('embed-email-input');
         this.joinBtn = document.getElementById('join-btn');
         this.unjoinBtn = document.getElementById('unjoin-btn');
+        this.joinedUsersList = document.getElementById('joined-users-list');
 
         // Multi event mode elements
         this.searchInput = document.getElementById('search-input');
@@ -498,6 +519,7 @@ class EmbedUI {
             if (!response.ok) throw new Error('Failed to load event details');
             const event = await response.json();
             this.renderEventDetails(event);
+            this.renderJoinedUsers(event.subscriptions);
         } catch (error) {
             this.eventDetails.innerHTML = `<p>Error: ${error.message}</p>`;
         }
@@ -554,6 +576,21 @@ class EmbedUI {
         `;
     }
 
+    renderJoinedUsers(subscriptions) {
+        if (subscriptions.length === 0) {
+            this.joinedUsersList.innerHTML = '<p>No one has joined this event yet.</p>';
+            return;
+        }
+        const list = document.createElement('ul');
+        subscriptions.forEach(sub => {
+            const item = document.createElement('li');
+            item.textContent = sub.metadata.nickname || sub.userId; // Display nickname if available, otherwise userId
+            list.appendChild(item);
+        });
+        this.joinedUsersList.innerHTML = '';
+        this.joinedUsersList.appendChild(list);
+    }
+
     async joinEvent() {
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get('eventId');
@@ -578,6 +615,7 @@ class EmbedUI {
             }
 
             alert('Successfully joined the event!');
+            this.loadEvent(eventId);
         } catch (error) {
             alert(`Error: ${error.message}`);
         }
@@ -606,6 +644,7 @@ class EmbedUI {
             }
 
             alert('Successfully un-joined from the event!');
+            this.loadEvent(eventId);
         } catch (error) {
             alert(`Error: ${error.message}`);
         }
