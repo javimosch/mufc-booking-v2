@@ -1,8 +1,26 @@
 class CLIWebUI {
     constructor() {
         this.token = null;
+        this.organizationId = null;
         this.initializeElements();
         this.bindEvents();
+        this.checkLoginStatus();
+    }
+
+    checkLoginStatus() {
+        const storedToken = localStorage.getItem('jwtToken');
+        const storedOrgId = localStorage.getItem('organizationId');
+        if (storedToken && storedOrgId) {
+            this.token = storedToken;
+            this.organizationId = storedOrgId;
+            this.loginSection.style.display = 'none';
+            this.dashboardSection.style.display = 'grid';
+            this.addLog('success', '✅ Auto-logged in');
+            this.loadDashboard();
+        } else {
+            this.loginSection.style.display = 'flex';
+            this.dashboardSection.style.display = 'none';
+        }
     }
 
     initializeElements() {
@@ -11,6 +29,7 @@ class CLIWebUI {
         this.emailInput = document.getElementById('email-input');
         this.passwordInput = document.getElementById('password-input');
         this.loginBtn = document.getElementById('login-btn');
+        this.logoutBtn = document.getElementById('logout-btn');
 
         // Dashboard elements
         this.dashboardSection = document.getElementById('dashboard-section');
@@ -35,6 +54,7 @@ class CLIWebUI {
 
     bindEvents() {
         this.loginBtn.addEventListener('click', () => this.login());
+        this.logoutBtn.addEventListener('click', () => this.logout());
         this.addEventBtn.addEventListener('click', () => this.showAddEventModal());
         this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
         this.addOrganizationBtn.addEventListener('click', () => this.showAddOrganizationModal());
@@ -63,11 +83,14 @@ class CLIWebUI {
 
             const data = await response.json();
             this.token = data.token;
+            localStorage.setItem('jwtToken', this.token);
             // Decode the token to get organizationId
             const payload = JSON.parse(atob(data.token.split('.')[1]));
             this.organizationId = payload.organizationId;
+            localStorage.setItem('organizationId', this.organizationId);
             this.loginSection.style.display = 'none';
             this.dashboardSection.style.display = 'grid';
+            this.logoutBtn.style.display = 'block';
             this.addLog('success', '✅ Login successful');
             this.loadDashboard();
         } catch (error) {
@@ -619,6 +642,17 @@ class CLIWebUI {
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
         }
+    }
+
+    logout() {
+        localStorage.removeItem('jwtToken');
+        localStorage.removeItem('organizationId');
+        this.token = null;
+        this.organizationId = null;
+        this.loginSection.style.display = 'flex';
+        this.dashboardSection.style.display = 'none';
+        this.logoutBtn.style.display = 'none';
+        this.addLog('info', '👋 Logged out');
     }
 }
 

@@ -124,7 +124,8 @@ async function updateOrganization(cli) {
       console.log('✅ Organization deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting organization:', error.message);
-    n    await cli.question('\nPress Enter to continue...');
+    await cli.question('\nPress Enter to continue...');
   }
+}
 
 module.exports = manageOrganizations;

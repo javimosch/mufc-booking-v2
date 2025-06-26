@@ -35,7 +35,7 @@ const matchEventSchema = new mongoose.Schema({
   title: { type: String, required: true },
   repeatEach: { type: String, enum: ['none', 'week', 'month'], default: 'none' },
   subscriptions: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'WebUIUser' },
     metadata: mongoose.Schema.Types.Mixed,
   }],
   metadata: mongoose.Schema.Types.Mixed,
