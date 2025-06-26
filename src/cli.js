@@ -7,7 +7,7 @@ const { spawn } = require('child_process');
 const ConfigManager = require('../utils/config-manager');
 const FileOperations = require('../utils/file-operations');
 const manageOrganizations = require('./cli/organization');
-const manageUsers = require('./cli/user');
+
 const manageWebUIUsers = require('./cli/webui-user');
 const manageMatchEvents = require('./cli/match-event');
 
@@ -205,8 +205,7 @@ class GenericCLI {
     const choices = [
       { name: 'Manage Organizations', value: 'manageOrganizations' },
       { name: 'Manage WebUI Users', value: 'manageWebUIUsers' },
-      { name: 'Manage Match Events', value: 'manageMatchEvents' },
-      { name: 'Manage Users', value: 'manageUsers' },
+      
       { name: 'Configure Super Admin', value: 'manageSuperAdmin' },
       { name: 'Launch Web UI', value: 'launchWebUI' },
       { name: 'Exit', value: 'exit' }
@@ -226,9 +225,7 @@ class GenericCLI {
     await manageOrganizations(this);
   }
 
-  async manageUsers() {
-    await manageUsers(this);
-  }
+  
 
   async manageWebUIUsers() {
     await manageWebUIUsers(this);
@@ -299,7 +296,6 @@ class GenericCLI {
         { name: 'Manage Organizations', value: 'manageOrganizations' },
         { name: 'Manage WebUI Users', value: 'manageWebUIUsers' },
         { name: 'Manage Match Events', value: 'manageMatchEvents' },
-        { name: 'Manage Users', value: 'manageUsers' },
         { name: 'Configure Super Admin', value: 'manageSuperAdmin' },
         { name: 'Launch Web UI', value: 'launchWebUI' },
         { name: 'Exit', value: 'exit' }
@@ -319,9 +315,7 @@ class GenericCLI {
           case 'manageMatchEvents':
             await this.manageMatchEvents();
             break;
-          case 'manageUsers':
-            await this.manageUsers();
-            break;
+          
           case 'manageSuperAdmin':
             await this.manageSuperAdmin();
             break;

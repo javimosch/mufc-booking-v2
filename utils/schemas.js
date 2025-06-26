@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt'); // Import bcrypt
 
 const organizationSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -9,7 +10,16 @@ const webUIUserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Added role field
 }, { timestamps: true });
+
+// Pre-save hook to hash password
+webUIUserSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
 const userSchema = new mongoose.Schema({
   firstName: String,
@@ -37,9 +47,10 @@ const passedMatchEventSchema = new mongoose.Schema({
   matchEventId: { type: mongoose.Schema.Types.ObjectId, ref: 'MatchEvent' },
   eventDate: { type: Date, required: true },
   subscriptions: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'WebUIUser' },
     metadata: mongoose.Schema.Types.Mixed,
   }],
+  organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
 }, { timestamps: true });
 
 const Organization = mongoose.model('Organization', organizationSchema);
@@ -51,7 +62,7 @@ const PassedMatchEvent = mongoose.model('PassedMatchEvent', passedMatchEventSche
 module.exports = {
   Organization,
   WebUIUser,
-  User,
+
   MatchEvent,
   PassedMatchEvent,
 };

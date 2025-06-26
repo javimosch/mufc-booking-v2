@@ -4,8 +4,8 @@ const bcrypt = require('bcrypt');
 async function manageWebUIUsers(cli) {
   while (true) {
     console.clear();
-    console.log('👤 Manage WebUI Users');
-    console.log('══════════════════════');
+    console.log('👥 Manage WebUI Users');
+    console.log('══════════════════');
     console.log('1. List WebUI Users');
     console.log('2. Add WebUI User');
     console.log('3. Update WebUI User');
@@ -44,7 +44,7 @@ async function listWebUIUsers(cli) {
     console.log('No WebUI users found.');
   } else {
     users.forEach(user => {
-      console.log(`ID: ${user._id} | Email: ${user.email} | Organization: ${user.organizationId ? user.organizationId.name : 'N/A'}`);
+      console.log(`ID: ${user._id} | Email: ${user.email} | Role: ${user.role} | Organization: ${user.organizationId ? user.organizationId.name : 'N/A'}`);
     });
   }
   await cli.question('\nPress Enter to continue...');
@@ -53,26 +53,50 @@ async function listWebUIUsers(cli) {
 async function addWebUIUser(cli) {
   console.log('\n--- Adding a new WebUI User ---');
   const email = await cli.question('Enter user email: ');
-  const password = await cli.question('Enter password: ');
-  const organizationId = await cli.question('Enter organization ID: ');
-
-  if (!email || !password || !organizationId) {
-    console.log('❌ Email, password, and organization ID are required.');
+  if (!email) {
+    console.log('❌ User email is required.');
     await cli.question('\nPress Enter to continue...');
     return;
   }
 
-  try {
-    const organization = await Organization.findById(organizationId);
-    if (!organization) {
-      console.log('❌ Organization not found.');
-      await cli.question('\nPress Enter to continue...');
-      return;
-    }
+  const password = await cli.question('Enter password: ');
+  if (!password) {
+    console.log('❌ Password is required.');
+    await cli.question('\nPress Enter to continue...');
+    return;
+  }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new WebUIUser({ email, password: hashedPassword, organizationId });
-    await newUser.save();
+  const role = await cli.question('Enter role (user/admin, default: user): ') || 'user';
+  if (!['user', 'admin'].includes(role)) {
+    console.log('❌ Invalid role. Must be \'user\' or \'admin\'.');
+    await cli.question('\nPress Enter to continue...');
+    return;
+  }
+
+  const organizations = await Organization.find();
+  if (organizations.length === 0) {
+    console.log('❌ No organizations found. Please create an organization first.');
+    await cli.question('\nPress Enter to continue...');
+    return;
+  }
+
+  console.log('Available Organizations:');
+  organizations.forEach((org, index) => {
+    console.log(`${index + 1}. ${org.name} (ID: ${org._id})`);
+  });
+
+  const orgChoice = await cli.question('Select organization by number or ID: ');
+  let organizationId;
+
+  if (!isNaN(orgChoice) && parseInt(orgChoice) > 0 && parseInt(orgChoice) <= organizations.length) {
+    organizationId = organizations[parseInt(orgChoice) - 1]._id;
+  } else {
+    organizationId = orgChoice;
+  }
+
+  try {
+    const newWebUIUser = new WebUIUser({ email, password, role, organizationId });
+    await newWebUIUser.save();
     console.log('✅ WebUI User added successfully!');
   } catch (error) {
     console.error('❌ Error adding WebUI user:', error.message);
@@ -82,21 +106,31 @@ async function addWebUIUser(cli) {
 
 async function updateWebUIUser(cli) {
     console.log('\n--- Updating a WebUI User ---');
-    const email = await cli.question('Enter the email of the user to update: ');
+    const email = await cli.question('Enter the email of the WebUI user to update: ');
   
     try {
       const user = await WebUIUser.findOne({ email });
       if (!user) {
-        console.log('❌ User not found.');
+        console.log('❌ WebUI User not found.');
         await cli.question('\nPress Enter to continue...');
         return;
       }
   
+      const newEmail = await cli.question(`Enter new email (current: ${user.email}): `);
       const newPassword = await cli.question('Enter new password (leave blank to keep current): ');
-      if (newPassword) {
-        user.password = await bcrypt.hash(newPassword, 10);
+      const newRole = await cli.question(`Enter new role (user/admin, current: ${user.role}, leave blank to keep current): `);
+
+      if (newEmail) user.email = newEmail;
+      if (newPassword) user.password = newPassword; // Pre-save hook will hash it
+      if (newRole) {
+        if (!['user', 'admin'].includes(newRole)) {
+          console.log('❌ Invalid role. Must be \'user\' or \'admin\'.');
+          await cli.question('\nPress Enter to continue...');
+          return;
+        }
+        user.role = newRole;
       }
-  
+
       await user.save();
       console.log('✅ WebUI User updated successfully!');
     } catch (error) {
@@ -107,14 +141,14 @@ async function updateWebUIUser(cli) {
   
 async function deleteWebUIUser(cli) {
     console.log('\n--- Deleting a WebUI User ---');
-    const email = await cli.question('Enter the email of the user to delete: ');
+    const email = await cli.question('Enter the email of the WebUI user to delete: ');
   
     try {
       const result = await WebUIUser.findOneAndDelete({ email });
       if (result) {
         console.log('✅ WebUI User deleted successfully!');
       } else {
-        console.log('❌ User not found.');
+        console.log('❌ WebUI User not found.');
       }
     } catch (error) {
       console.error('❌ Error deleting WebUI user:', error.message);

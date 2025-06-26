@@ -16,8 +16,10 @@ class CLIWebUI {
         this.dashboardSection = document.getElementById('dashboard-section');
         this.matchEventsContent = document.getElementById('match-events-content');
         this.usersContent = document.getElementById('users-content');
+        this.organizationsContent = document.getElementById('organizations-content');
         this.addEventBtn = document.getElementById('add-event-btn');
         this.addUserBtn = document.getElementById('add-user-btn');
+        this.addOrganizationBtn = document.getElementById('add-organization-btn');
         this.publicEventLinksContent = document.getElementById('public-event-links-content');
 
         // Log elements
@@ -35,6 +37,7 @@ class CLIWebUI {
         this.loginBtn.addEventListener('click', () => this.login());
         this.addEventBtn.addEventListener('click', () => this.showAddEventModal());
         this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
+        this.addOrganizationBtn.addEventListener('click', () => this.showAddOrganizationModal());
         this.modalCancel.addEventListener('click', () => this.hideModal());
     }
 
@@ -76,6 +79,7 @@ class CLIWebUI {
         this.loadMatchEvents();
         this.loadUsers();
         this.loadPublicEventLinks();
+        this.loadOrganizations();
     }
 
     async loadPublicEventLinks() {
@@ -180,6 +184,154 @@ class CLIWebUI {
         this.matchEventsContent.appendChild(list);
     }
 
+    async loadOrganizations() {
+        try {
+            const response = await fetch('/api/organizations', {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            if (!response.ok) throw new Error('Failed to load organizations');
+            const organizations = await response.json();
+            this.renderOrganizations(organizations);
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
+    renderOrganizations(organizations) {
+        if (organizations.length === 0) {
+            this.organizationsContent.innerHTML = '<p>No organizations found.</p>';
+            return;
+        }
+        const list = document.createElement('ul');
+        organizations.forEach(org => {
+            const item = document.createElement('li');
+            item.innerHTML = `
+                <span>${org.name} - ${org.description || 'No description'}</span>
+                <button class="btn btn--secondary" onclick="ui.showEditOrganizationModal('${org._id}', '${org.name}', '${org.description || ''}')">Edit</button>
+                <button class="btn btn--danger" onclick="ui.showDeleteOrganizationModal('${org._id}', '${org.name}')">Delete</button>
+            `;
+            list.appendChild(item);
+        });
+        this.organizationsContent.innerHTML = '';
+        this.organizationsContent.appendChild(list);
+    }
+
+    showAddOrganizationModal() {
+        this.showModal('Add Organization', this.getOrganizationForm(), () => this.addOrganization());
+    }
+
+    getOrganizationForm() {
+        return `
+            <div class="form-group">
+                <label class="label" for="org-name-input">Name</label>
+                <input type="text" id="org-name-input" class="input" placeholder="Organization name...">
+            </div>
+            <div class="form-group">
+                <label class="label" for="org-description-input">Description</label>
+                <input type="text" id="org-description-input" class="input" placeholder="Description...">
+            </div>
+        `;
+    }
+
+    async addOrganization() {
+        const name = document.getElementById('org-name-input').value.trim();
+        const description = document.getElementById('org-description-input').value.trim();
+
+        if (!name) {
+            this.addLog('error', '❌ Organization name is required');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/organizations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ name, description })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add organization');
+            }
+
+            this.addLog('success', '✅ Organization added successfully');
+            this.loadOrganizations();
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
+    showEditOrganizationModal(id, currentName, currentDescription) {
+        const form = `
+            <div class="form-group">
+                <label class="label" for="edit-org-name-input">Name</label>
+                <input type="text" id="edit-org-name-input" class="input" value="${currentName}" placeholder="Organization name...">
+            </div>
+            <div class="form-group">
+                <label class="label" for="edit-org-description-input">Description</label>
+                <input type="text" id="edit-org-description-input" class="input" value="${currentDescription}" placeholder="Description...">
+            </div>
+        `;
+        this.showModal('Edit Organization', form, () => this.editOrganization(id));
+    }
+
+    async editOrganization(id) {
+        const name = document.getElementById('edit-org-name-input').value.trim();
+        const description = document.getElementById('edit-org-description-input').value.trim();
+
+        if (!name) {
+            this.addLog('error', '❌ Organization name is required');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/organizations/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({ name, description })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update organization');
+            }
+
+            this.addLog('success', '✅ Organization updated successfully');
+            this.loadOrganizations();
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
+    showDeleteOrganizationModal(id, name) {
+        const message = `<p>Are you sure you want to delete the organization <strong>${name}</strong>? This action cannot be undone and will delete all associated users and match events.</p>`;
+        this.showModal('Delete Organization', message, () => this.deleteOrganization(id));
+    }
+
+    async deleteOrganization(id) {
+        try {
+            const response = await fetch(`/api/organizations/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete organization');
+            }
+
+            this.addLog('success', '✅ Organization and associated data deleted successfully');
+            this.loadOrganizations();
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
     renderUsers(users) {
         if (users.length === 0) {
             this.usersContent.innerHTML = '<p>No users found.</p>';
@@ -189,7 +341,7 @@ class CLIWebUI {
         users.forEach(user => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${user.email} - ${user.firstName || ''} ${user.lastName || ''}</span>
+                <span>${user.email} - ${user.role}</span>
                 <button class="btn btn--secondary" onclick="ui.showJoinEventModal('${user._id}')">Join Event</button>
                 <button class="btn btn--danger" onclick="ui.showUnjoinEventModal('${user._id}')">Un-join Event</button>
             `;
@@ -395,12 +547,15 @@ class CLIWebUI {
                 <input type="email" id="user-email-input" class="input" placeholder="User email...">
             </div>
             <div class="form-group">
-                <label class="label" for="user-firstname-input">First Name</label>
-                <input type="text" id="user-firstname-input" class="input" placeholder="First name...">
+                <label class="label" for="user-password-input">Password</label>
+                <input type="password" id="user-password-input" class="input" placeholder="User password...">
             </div>
             <div class="form-group">
-                <label class="label" for="user-lastname-input">Last Name</label>
-                <input type="text" id="user-lastname-input" class="input" placeholder="Last name...">
+                <label class="label" for="user-role-select">Role</label>
+                <select id="user-role-select" class="input">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
             </div>
         `;
     }
@@ -437,11 +592,11 @@ class CLIWebUI {
 
     async addUser() {
         const email = document.getElementById('user-email-input').value.trim();
-        const firstName = document.getElementById('user-firstname-input').value.trim();
-        const lastName = document.getElementById('user-lastname-input').value.trim();
+        const password = document.getElementById('user-password-input').value.trim();
+        const role = document.getElementById('user-role-select').value;
 
-        if (!email) {
-            this.addLog('error', '❌ User email is required');
+        if (!email || !password) {
+            this.addLog('error', '❌ Email and password are required');
             return;
         }
 
@@ -452,7 +607,7 @@ class CLIWebUI {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.token}`
                 },
-                body: JSON.stringify({ email, firstName, lastName })
+                body: JSON.stringify({ email, password, role })
             });
 
             if (!response.ok) {

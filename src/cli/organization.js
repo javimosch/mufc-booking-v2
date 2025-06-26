@@ -1,4 +1,4 @@
-const { Organization } = require('../../utils/schemas');
+const { Organization, WebUIUser, MatchEvent, PassedMatchEvent } = require('../../utils/schemas');
 
 async function manageOrganizations(cli) {
   while (true) {
@@ -101,16 +101,30 @@ async function updateOrganization(cli) {
     const id = await cli.question('Enter the ID of the organization to delete: ');
   
     try {
-      const result = await Organization.findByIdAndDelete(id);
-      if (result) {
-        console.log('✅ Organization deleted successfully!');
-      } else {
+      const organization = await Organization.findById(id);
+      if (!organization) {
         console.log('❌ Organization not found.');
+        await cli.question('\nPress Enter to continue...');
+        return;
       }
+
+      // Delete associated WebUIUsers
+      await WebUIUser.deleteMany({ organizationId: id });
+      console.log('✅ Associated WebUI Users deleted.');
+
+      // Delete associated MatchEvents
+      await MatchEvent.deleteMany({ organizationId: id });
+      console.log('✅ Associated Match Events deleted.');
+
+      // Delete associated PassedMatchEvents
+      await PassedMatchEvent.deleteMany({ organizationId: id });
+      console.log('✅ Associated Passed Match Events deleted.');
+
+      await organization.deleteOne();
+      console.log('✅ Organization deleted successfully!');
     } catch (error) {
       console.error('❌ Error deleting organization:', error.message);
-    }
-    await cli.question('\nPress Enter to continue...');
+    n    await cli.question('\nPress Enter to continue...');
   }
 
 module.exports = manageOrganizations;

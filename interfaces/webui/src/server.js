@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { WebUIUser, MatchEvent, User } = require('../../../utils/schemas');
+const { WebUIUser, MatchEvent, Organization } = require('../../../utils/schemas');
 const GenericCLI = require('../../../src/cli.js');
 const databaseManager = require('../../../utils/database');
 
@@ -249,13 +249,14 @@ app.post('/api/public/match-events/:eventId/join', async (req, res) => {
         const { eventId } = req.params;
         const { email, nickname } = req.body;
 
-        let user = await User.findOne({ email });
+        let user = await WebUIUser.findOne({ email });
         if (!user) {
             const event = await MatchEvent.findById(eventId);
-            user = new User({
+            user = new WebUIUser({
                 email,
-                firstName: nickname,
-                organizationId: event.organizationId
+                password: 'temporary_password', // Public users don't have a password, set a temporary one
+                organizationId: event.organizationId,
+                role: 'user'
             });
             await user.save();
         }
@@ -285,7 +286,7 @@ app.post('/api/public/match-events/:eventId/unjoin', async (req, res) => {
         const { eventId } = req.params;
         const { email } = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await WebUIUser.findOne({ email });
         if (!user) {
             return res.status(400).json({ error: 'User not found' });
         }
@@ -351,33 +352,107 @@ app.get('/api/match-events/:eventId', async (req, res) => {
     }
 });
 
-// Create user
+// Create WebUI user
 app.post('/api/users', authMiddleware, async (req, res) => {
     try {
-        const { email, firstName, lastName } = req.body;
-        const newUser = new User({
+        const { email, password, role } = req.body;
+        const newWebUIUser = new WebUIUser({
             email,
-            firstName,
-            lastName,
+            password,
+            role,
             organizationId: req.user.organizationId
         });
-        await newUser.save();
-        res.status(201).json(newUser);
+        await newWebUIUser.save();
+        res.status(201).json(newWebUIUser);
     } catch (error) {
-        console.error('Create user error:', error);
+        console.error('Create WebUI user error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Get users
+// Get WebUI users
 app.get('/api/users', authMiddleware, async (req, res) => {
     try {
-        // This should be filtered by organization, but the User schema doesn't have an organizationId yet.
-        // For now, returning all users.
-        const users = await User.find({ organizationId: req.user.organizationId });
+        const users = await WebUIUser.find({ organizationId: req.user.organizationId });
         res.json(users);
     } catch (error) {
-        console.error('Get users error:', error);
+        console.error('Get WebUI users error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get organizations
+app.get('/api/organizations', authMiddleware, async (req, res) => {
+    try {
+        const organizations = await Organization.find();
+        res.json(organizations);
+    } catch (error) {
+        console.error('Get organizations error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Create organization
+app.post('/api/organizations', authMiddleware, async (req, res) => {
+    try {
+        const { name, description } = req.body;
+        const newOrganization = new Organization({
+            name,
+            description
+        });
+        await newOrganization.save();
+        res.status(201).json(newOrganization);
+    } catch (error) {
+        console.error('Create organization error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Update organization
+app.put('/api/organizations/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description } = req.body;
+
+        const organization = await Organization.findById(id);
+        if (!organization) {
+            return res.status(404).json({ error: 'Organization not found' });
+        }
+
+        organization.name = name || organization.name;
+        organization.description = description || organization.description;
+        await organization.save();
+
+        res.json(organization);
+    } catch (error) {
+        console.error('Update organization error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete organization
+app.delete('/api/organizations/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const organization = await Organization.findById(id);
+        if (!organization) {
+            return res.status(404).json({ error: 'Organization not found' });
+        }
+
+        // Delete associated WebUIUsers
+        await WebUIUser.deleteMany({ organizationId: id });
+        // Delete associated MatchEvents
+        await MatchEvent.deleteMany({ organizationId: id });
+        // Delete associated PassedMatchEvents (assuming they are linked to MatchEvents or Organization)
+        // This might need more specific logic if PassedMatchEvent is not directly linked to organizationId
+        // For now, assuming it's linked via MatchEvent, so deleting MatchEvent will cascade.
+
+        await organization.deleteOne();
+
+        res.json({ message: 'Organization and associated data deleted successfully' });
+    } catch (error) {
+        console.error('Delete organization error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
