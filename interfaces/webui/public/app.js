@@ -11,15 +11,31 @@ class CLIWebUI {
         const storedToken = localStorage.getItem('jwtToken');
         const storedOrgId = localStorage.getItem('organizationId');
         if (storedToken && storedOrgId) {
-            this.token = storedToken;
-            this.organizationId = storedOrgId;
-            this.loginSection.style.display = 'none';
-            this.dashboardSection.style.display = 'grid';
-            this.addLog('success', '✅ Auto-logged in');
-            this.loadDashboard();
+            if (this.isTokenExpired(storedToken)) {
+                this.addLog('info', 'Token expired. Please log in again.');
+                this.logout(); // Clear token and redirect to login
+            } else {
+                this.token = storedToken;
+                this.organizationId = storedOrgId;
+                this.loginSection.style.display = 'none';
+                this.dashboardSection.style.display = 'grid';
+                this.addLog('success', '✅ Auto-logged in');
+                this.loadDashboard();
+            }
         } else {
             this.loginSection.style.display = 'flex';
             this.dashboardSection.style.display = 'none';
+        }
+    }
+
+    isTokenExpired(token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const expirationTime = payload.exp * 1000; // Convert to milliseconds
+            return Date.now() >= expirationTime;
+        } catch (e) {
+            console.error("Error decoding token:", e);
+            return true; // Assume expired or invalid if decoding fails
         }
     }
 
@@ -98,6 +114,26 @@ class CLIWebUI {
         }
     }
 
+    // Wrapper for fetch to handle 401 responses
+    async authenticatedFetch(url, options = {}) {
+        if (!options.headers) {
+            options.headers = {};
+        }
+        if (this.token) {
+            options.headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        const response = await fetch(url, options);
+
+        if (response.status === 401) {
+            this.addLog('error', 'Unauthorized: Your session has expired. Please log in again.');
+            this.logout();
+            throw new Error('Unauthorized'); // Prevent further processing of this response
+        }
+
+        return response;
+    }
+
     async loadDashboard() {
         this.loadMatchEvents();
         this.loadUsers();
@@ -110,9 +146,7 @@ class CLIWebUI {
             // Assuming the organizationId can be retrieved from the logged-in user's token
             // For now, we'll use a placeholder or fetch it if available in the token payload
             // This needs to be properly handled on the backend to return organizationId with user data
-            const response = await fetch(`/api/public/match-events?organizationId=${this.organizationId}`, {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch(`/api/public/match-events?organizationId=${this.organizationId}`);
             if (!response.ok) throw new Error('Failed to load match events for public links');
             const events = await response.json();
             this.renderPublicEventLinks(events);
@@ -165,9 +199,7 @@ class CLIWebUI {
 
     async loadMatchEvents() {
         try {
-            const response = await fetch('/api/match-events', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch('/api/match-events');
             if (!response.ok) throw new Error('Failed to load match events');
             const events = await response.json();
             this.renderMatchEvents(events);
@@ -178,9 +210,7 @@ class CLIWebUI {
 
     async loadUsers() {
         try {
-            const response = await fetch('/api/users', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch('/api/users');
             if (!response.ok) throw new Error('Failed to load users');
             const users = await response.json();
             this.renderUsers(users);
@@ -209,9 +239,7 @@ class CLIWebUI {
 
     async loadOrganizations() {
         try {
-            const response = await fetch('/api/organizations', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch('/api/organizations');
             if (!response.ok) throw new Error('Failed to load organizations');
             const organizations = await response.json();
             this.renderOrganizations(organizations);
@@ -266,11 +294,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch('/api/organizations', {
+            const response = await this.authenticatedFetch('/api/organizations', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ name, description })
             });
@@ -310,11 +337,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch(`/api/organizations/${id}`, {
+            const response = await this.authenticatedFetch(`/api/organizations/${id}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ name, description })
             });
@@ -337,11 +363,8 @@ class CLIWebUI {
 
     async deleteOrganization(id) {
         try {
-            const response = await fetch(`/api/organizations/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
+            const response = await this.authenticatedFetch(`/api/organizations/${id}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) {
@@ -376,9 +399,7 @@ class CLIWebUI {
 
     async showJoinEventModal(userId) {
         try {
-            const response = await fetch('/api/match-events', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch('/api/match-events');
             if (!response.ok) throw new Error('Failed to load match events');
             const events = await response.json();
             const form = this.getJoinEventForm(events);
@@ -390,9 +411,7 @@ class CLIWebUI {
 
     async showUnjoinEventModal(userId) {
         try {
-            const response = await fetch('/api/match-events', {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
+            const response = await this.authenticatedFetch('/api/match-events');
             if (!response.ok) throw new Error('Failed to load match events');
             const events = await response.json();
             const form = this.getJoinEventForm(events);
@@ -424,11 +443,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch(`/api/match-events/${eventId}/join`, {
+            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/join`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ userId })
             });
@@ -451,11 +469,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch(`/api/match-events/${eventId}/unjoin`, {
+            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/unjoin`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ userId })
             });
@@ -488,11 +505,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch(`/api/match-events/${eventId}/cancel`, {
+            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/cancel`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ date })
             });
@@ -593,11 +609,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch('/api/match-events', {
+            const response = await this.authenticatedFetch('/api/match-events', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ title, repeatEach })
             });
@@ -624,11 +639,10 @@ class CLIWebUI {
         }
 
         try {
-            const response = await fetch('/api/users', {
+            const response = await this.authenticatedFetch('/api/users', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ email, password, role })
             });

@@ -168,7 +168,7 @@ body {
     background: var(--surface-muted);
     padding: var(--spacing-sm);
     border-radius: var(--radius-md);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm); /* Increased for better mobile readability */
     font-size: var(--text-sm);
 }
 
@@ -177,6 +177,8 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    max-width: 1200px; /* Added for consistent content width */
+    margin: 0 auto; /* Center the container */
 }
 
 
