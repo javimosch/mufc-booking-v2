@@ -7,6 +7,16 @@ class CLIWebUI {
         this.checkLoginStatus();
     }
 
+    // Helper function to format date to DD-MM-YYYY
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+
     checkLoginStatus() {
         const storedToken = localStorage.getItem('jwtToken');
         const storedOrgId = localStorage.getItem('organizationId');
@@ -240,9 +250,9 @@ class CLIWebUI {
                     const action = iteration.isCancelled ? 'uncancel' : 'cancel';
                     return `
                         <li class="iteration-item ${statusClass}">
-                            <span>${event.title} - ${iteration.date}</span>
+                            <span>${event.title} - ${this.formatDate(iteration.date)}</span>
                             <div class="list-item-actions button-group">
-                                <button class="btn ${buttonClass}" onclick="ui.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
+                                <button class="btn ${buttonClass} btn--small" onclick="ui.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
                             </div>
                         </li>
                     `;
@@ -255,7 +265,7 @@ class CLIWebUI {
             item.innerHTML = `
                 <div class="list-item-content">
                     <h3>${event.title} (Repeats: ${event.repeatEach})</h3>
-                    <p>Start Date: ${event.startDate}</p>
+                    <p>Start Date: ${this.formatDate(event.startDate)}</p>
                 </div>
                 <div class="list-item-actions button-group">
                     <button class="btn btn--danger" onclick="ui.showDeleteEventModal('${event._id}', '${event.title}')">Delete Event</button>
@@ -692,6 +702,7 @@ class CLIWebUI {
         const title = document.getElementById('event-title-input').value.trim();
         const startDate = new Date(document.getElementById('event-start-date-input').value);
         const isoStartDate = startDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        const repeatEach = document.getElementById('event-repeat-select').value; // Get repeatEach value
 
         if (!title || !isoStartDate) {
             this.addLog('error', '❌ Event title and start date are required');

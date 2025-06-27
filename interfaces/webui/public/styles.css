@@ -389,6 +389,23 @@ ul li:hover {
     flex-wrap: wrap;
 }
 
+.btn--small {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--text-sm);
+    min-height: 32px;
+}
+
+.iteration-item .button-group {
+    flex-direction: column; /* Ensure buttons are on new lines */
+    width: auto; /* Allow button group to size naturally */
+}
+
+@media (min-width: 768px) {
+    .iteration-item .button-group {
+        flex-direction: row; /* Revert to row on larger screens */
+    }
+}
+
 /* Progress System */
 .progress {
     width: 100%;
