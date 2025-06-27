@@ -139,7 +139,7 @@ class CLIWebUI {
                 <a href="${publicLink}" target="_blank">${publicLink}</a>
                 <div class="code-example">
                     <textarea class="code-block" readonly>${iframeCode}</textarea>
-                    <button class="btn btn--secondary copy-btn" data-clipboard-target="${iframeCode}">Copy</button>
+                    <button class="btn btn--secondary copy-btn" data-clipboard-target='${iframeCode}'>Copy</button>
                 </div>
             `;
             list.appendChild(item);
