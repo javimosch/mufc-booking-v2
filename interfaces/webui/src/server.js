@@ -237,6 +237,7 @@ app.post('/api/match-events/:eventId/cancel', authMiddleware, async (req, res) =
         // Add date to cancelledDates if not already present
         if (!event.metadata.cancelledDates.includes(date)) {
             event.metadata.cancelledDates.push(date);
+            event.markModified('metadata'); // Mark metadata as modified
             await event.save();
         }
 
@@ -261,6 +262,7 @@ app.post('/api/match-events/:eventId/uncancel', authMiddleware, async (req, res)
         if (event.metadata && event.metadata.cancelledDates) {
             // Remove date from cancelledDates
             event.metadata.cancelledDates = event.metadata.cancelledDates.filter(d => d !== date);
+            event.markModified('metadata'); // Mark metadata as modified
             await event.save();
         }
 
