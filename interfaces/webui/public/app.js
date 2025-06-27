@@ -84,7 +84,7 @@ class CLIWebUI {
         this.addEventBtn.addEventListener('click', () => this.showAddEventModal());
         this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
         this.addOrganizationBtn.addEventListener('click', () => this.showAddOrganizationModal());
-        this.modalCancel.addEventListener('click', () => this.hideModal());
+        this.modalCancel.addEventListener('click', () => this.modal.close());
     }
 
     async login() {
@@ -627,26 +627,23 @@ class CLIWebUI {
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
     }
 
-    showModal(title, message, onConfirm = null) {
+    showModal(title, message, onOk) {
         this.modalTitle.textContent = title;
         this.modalMessage.innerHTML = message;
-        this.modal.style.display = 'flex';
-        
-        if (onConfirm) {
-            this.modalOk.onclick = () => {
-                this.hideModal();
-                onConfirm();
-            };
-            this.modalCancel.style.display = 'inline-flex';
-        } else {
-            this.modalOk.onclick = () => this.hideModal();
-            this.modalCancel.style.display = 'none';
-        }
-    }
 
-    hideModal() {
-        this.modal.style.display = 'none';
-        this.modalOk.onclick = null;
+        // Clone and replace the OK button to remove old event listeners
+        const newOk = this.modalOk.cloneNode(true);
+        this.modalOk.parentNode.replaceChild(newOk, this.modalOk);
+        this.modalOk = newOk;
+
+        this.modalOk.addEventListener('click', () => {
+            if (onOk) {
+                onOk();
+            }
+            this.modal.close();
+        });
+
+        this.modal.showModal();
     }
 
     showAddEventModal() {
