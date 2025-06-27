@@ -303,10 +303,60 @@ class EmbedUI {
         // Translate the repeat value
         const translatedRepeat = this.translations[this.currentLanguage][event.repeatEach] || event.repeatEach;
         
+        let nextIterationText = '';
+        if (event.repeatEach !== 'none' && event.startDate) {
+            const nextIteration = this.getNextIterationDate(event);
+            if (nextIteration) {
+                nextIterationText = `<p>Next Iteration: ${nextIteration}</p>`;
+            }
+        }
+
         this.eventDetails.innerHTML = `
             <h3>${event.title}</h3>
             <p>${this.translations[this.currentLanguage].repeats}: ${translatedRepeat}</p>
+            ${nextIterationText}
         `;
+    }
+
+    // Helper function to calculate the next event iteration date
+    getNextIterationDate(event) {
+        if (!event.startDate || isNaN(new Date(event.startDate).getTime())) return null;
+
+        let currentDate = new Date(event.startDate);
+        currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // If the start date is in the past, advance to the next occurrence
+        while (currentDate < today) {
+            if (event.repeatEach === 'week') {
+                currentDate.setDate(currentDate.getDate() + 7);
+            } else if (event.repeatEach === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else {
+                // No repeat, so only the start date is relevant and it's in the past
+                return null;
+            }
+        }
+
+        // Check if the current iteration is cancelled
+        const isCancelled = event.metadata && event.metadata.cancelledDates &&
+                            event.metadata.cancelledDates.includes(currentDate.toISOString().split('T')[0]);
+
+        if (isCancelled) {
+            // If cancelled, find the next uncancelled iteration
+            if (event.repeatEach === 'week') {
+                currentDate.setDate(currentDate.getDate() + 7);
+            } else if (event.repeatEach === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else {
+                return null; // No repeat, and current is cancelled
+            }
+            // Recursively call to check the next date
+            return this.getNextIterationDate({ ...event, startDate: currentDate.toISOString().split('T')[0] });
+        }
+
+        return currentDate.toISOString().split('T')[0];
     }
 
     renderJoinedUsers(subscriptions) {

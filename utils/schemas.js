@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
 
 const matchEventSchema = new mongoose.Schema({
   title: { type: String, required: true },
+  startDate: { type: Date, required: true }, // Added startDate field
   repeatEach: { type: String, enum: ['none', 'week', 'month'], default: 'none' },
   subscriptions: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'WebUIUser' },

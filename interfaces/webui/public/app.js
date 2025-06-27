@@ -230,19 +230,63 @@ class CLIWebUI {
         }
         const list = document.createElement('ul');
         events.forEach(event => {
+            const iterations = this.getFutureIterations(event);
+            let iterationsHtml = '';
+            if (iterations.length > 0) {
+                iterationsHtml = iterations.map(iteration => {
+                    const statusClass = iteration.isCancelled ? 'cancelled' : 'active';
+                    const buttonText = iteration.isCancelled ? 'Uncancel' : 'Cancel';
+                    const buttonClass = iteration.isCancelled ? 'btn--secondary' : 'btn--danger';
+                    const action = iteration.isCancelled ? 'uncancel' : 'cancel';
+                    return `
+                        <li class="iteration-item ${statusClass}">
+                            <span>${event.title} - ${iteration.date}</span>
+                            <div class="list-item-actions button-group">
+                                <button class="btn ${buttonClass}" onclick="ui.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+            } else {
+                iterationsHtml = '<p>No upcoming iterations.</p>';
+            }
+
             const item = document.createElement('li');
             item.innerHTML = `
                 <div class="list-item-content">
-                    <span>${event.title} (Repeats: ${event.repeatEach})</span>
+                    <h3>${event.title} (Repeats: ${event.repeatEach})</h3>
+                    <p>Start Date: ${event.startDate}</p>
                 </div>
-                <div class="list-item-actions button-group">
-                    <button class="btn btn--danger" onclick="ui.showCancelEventModal('${event._id}')">Cancel Iteration</button>
+                <div class="event-iterations">
+                    <h4>Upcoming Iterations:</h4>
+                    <ul>${iterationsHtml}</ul>
                 </div>
             `;
             list.appendChild(item);
         });
         this.matchEventsContent.innerHTML = '';
         this.matchEventsContent.appendChild(list);
+    }
+
+    async toggleCancelEventIteration(eventId, date, action) {
+        try {
+            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ date })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to ${action} event iteration`);
+            }
+
+            this.addLog('success', `✅ Event iteration ${action}led successfully`);
+            this.loadMatchEvents(); // Reload events to update UI
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
     }
 
     async loadOrganizations() {
@@ -585,6 +629,10 @@ class CLIWebUI {
                 <input type="text" id="event-title-input" class="input" placeholder="Event title...">
             </div>
             <div class="form-group">
+                <label class="label" for="event-start-date-input">Start Date</label>
+                <input type="date" id="event-start-date-input" class="input">
+            </div>
+            <div class="form-group">
                 <label class="label" for="event-repeat-select">Repeats</label>
                 <select id="event-repeat-select" class="input">
                     <option value="none">None</option>
@@ -617,10 +665,11 @@ class CLIWebUI {
 
     async addEvent() {
         const title = document.getElementById('event-title-input').value.trim();
-        const repeatEach = document.getElementById('event-repeat-select').value;
+        const startDate = new Date(document.getElementById('event-start-date-input').value);
+        const isoStartDate = startDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 
-        if (!title) {
-            this.addLog('error', '❌ Event title is required');
+        if (!title || !isoStartDate) {
+            this.addLog('error', '❌ Event title and start date are required');
             return;
         }
 
@@ -630,7 +679,7 @@ class CLIWebUI {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ title, repeatEach })
+                body: JSON.stringify({ title, startDate: isoStartDate, repeatEach }) // Send formatted date
             });
 
             if (!response.ok) {
@@ -683,6 +732,50 @@ class CLIWebUI {
         this.dashboardSection.style.display = 'none';
         this.logoutBtn.style.display = 'none';
         this.addLog('info', '👋 Logged out');
+    }
+
+    // Helper function to calculate future event iterations
+    getFutureIterations(event, count = 5) {
+        const iterations = [];
+        // Ensure event.startDate is a valid date string before creating a Date object
+        if (!event.startDate || isNaN(new Date(event.startDate).getTime())) {
+            console.warn("Invalid startDate for event:", event);
+            return iterations; // Return empty array if startDate is invalid
+        }
+        let currentDate = new Date(event.startDate);
+        currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+        // If the start date is in the past, advance to the next occurrence
+        while (currentDate < new Date()) {
+            if (event.repeatEach === 'week') {
+                currentDate.setDate(currentDate.getDate() + 7);
+            } else if (event.repeatEach === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else {
+                // No repeat, so only the start date is relevant
+                break;
+            }
+        }
+
+        for (let i = 0; i < count; i++) {
+            const iterationDate = new Date(currentDate);
+            const isCancelled = event.metadata && event.metadata.cancelledDates &&
+                                event.metadata.cancelledDates.includes(iterationDate.toISOString().split('T')[0]);
+            iterations.push({
+                date: iterationDate.toISOString().split('T')[0],
+                isCancelled: isCancelled
+            });
+
+            if (event.repeatEach === 'week') {
+                currentDate.setDate(currentDate.getDate() + 7);
+            } else if (event.repeatEach === 'month') {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            } else {
+                // No repeat, only one iteration
+                break;
+            }
+        }
+        return iterations;
     }
 }
 

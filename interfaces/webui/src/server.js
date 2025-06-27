@@ -148,9 +148,10 @@ const authMiddleware = (req, res, next) => {
 // Create match event
 app.post('/api/match-events', authMiddleware, async (req, res) => {
     try {
-        const { title, repeatEach } = req.body;
+        const { title, startDate, repeatEach } = req.body;
         const newEvent = new MatchEvent({
             title,
+            startDate: new Date(startDate),
             repeatEach,
             organizationId: req.user.organizationId
         });
@@ -233,12 +234,39 @@ app.post('/api/match-events/:eventId/cancel', authMiddleware, async (req, res) =
             event.metadata.cancelledDates = [];
         }
 
-        event.metadata.cancelledDates.push(date);
-        await event.save();
+        // Add date to cancelledDates if not already present
+        if (!event.metadata.cancelledDates.includes(date)) {
+            event.metadata.cancelledDates.push(date);
+            await event.save();
+        }
 
         res.json({ success: true });
     } catch (error) {
         console.error('Cancel event iteration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Uncancel match event iteration
+app.post('/api/match-events/:eventId/uncancel', authMiddleware, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const { date } = req.body;
+
+        const event = await MatchEvent.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ error: 'Match Event not found' });
+        }
+
+        if (event.metadata && event.metadata.cancelledDates) {
+            // Remove date from cancelledDates
+            event.metadata.cancelledDates = event.metadata.cancelledDates.filter(d => d !== date);
+            await event.save();
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Uncancel event iteration error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
