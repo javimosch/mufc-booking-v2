@@ -1,0 +1,18 @@
+{
+  "description": "Template configuration for this project. See https://www.codebuff.com/config for all options.",
+  "startupProcesses": [
+    {
+      "name": "webui",
+      "command": "npm run dev",
+      "cwd": "interfaces/webui",
+      "stdoutFile": "logs/webui.log"
+    }
+  ],
+  "fileChangeHooks": [
+    {
+      "name": "restart-webui",
+      "command": "echo 'WebUI files changed - restart if needed'",
+      "filePattern": "interfaces/webui/**/*"
+    }
+  ]
+}
