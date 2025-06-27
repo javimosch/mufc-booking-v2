@@ -99,6 +99,7 @@ body {
     color: var(--color-text);
     line-height: 1.6;
     min-height: 100vh;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 .iframe-body {
@@ -170,6 +171,43 @@ body {
     border-radius: var(--radius-md);
     margin-bottom: var(--spacing-sm); /* Increased for better mobile readability */
     font-size: var(--text-sm);
+}
+
+/* List Item Styling */
+    padding: var(--spacing-md) var(--spacing-lg);
+
+ul li:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+}
+
+.list-item-content {
+    margin-bottom: var(--spacing-sm);
+    flex: 1;
+}
+
+.list-item-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: var(--spacing-sm);
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+}
+
+@media (min-width: 768px) {
+    ul li {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .list-item-content {
+        margin-bottom: 0;
+        flex-grow: 1;
+    }
+
+    .list-item-actions {
+        width: auto;
+    }
 }
 
 /* Layout Components */

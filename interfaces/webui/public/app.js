@@ -169,10 +169,14 @@ class CLIWebUI {
             const iframeCode = `<iframe src="${publicLink}" width="600" height="400" frameborder="0"></iframe>`;
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${event.title}: </span>
-                <a href="${publicLink}" target="_blank">${publicLink}</a>
-                <div class="code-example">
-                    <textarea class="code-block" readonly>${iframeCode}</textarea>
+                <div class="list-item-content">
+                    <span>${event.title}: </span>
+                    <a href="${publicLink}" target="_blank">${publicLink}</a>
+                    <div class="code-example">
+                        <textarea class="code-block" readonly>${iframeCode}</textarea>
+                    </div>
+                </div>
+                <div class="list-item-actions button-group">
                     <button class="btn btn--secondary copy-btn" data-clipboard-target='${iframeCode}'>Copy</button>
                 </div>
             `;
@@ -228,8 +232,12 @@ class CLIWebUI {
         events.forEach(event => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${event.title} (Repeats: ${event.repeatEach})</span>
-                <button class="btn btn--danger" onclick="ui.showCancelEventModal('${event._id}')">Cancel Iteration</button>
+                <div class="list-item-content">
+                    <span>${event.title} (Repeats: ${event.repeatEach})</span>
+                </div>
+                <div class="list-item-actions button-group">
+                    <button class="btn btn--danger" onclick="ui.showCancelEventModal('${event._id}')">Cancel Iteration</button>
+                </div>
             `;
             list.appendChild(item);
         });
@@ -257,9 +265,13 @@ class CLIWebUI {
         organizations.forEach(org => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${org.name} - ${org.description || 'No description'}</span>
-                <button class="btn btn--secondary" onclick="ui.showEditOrganizationModal('${org._id}', '${org.name}', '${org.description || ''}')">Edit</button>
-                <button class="btn btn--danger" onclick="ui.showDeleteOrganizationModal('${org._id}', '${org.name}')">Delete</button>
+                <div class="list-item-content">
+                    <span>${org.name} - ${org.description || 'No description'}</span>
+                </div>
+                <div class="list-item-actions button-group">
+                    <button class="btn btn--secondary" onclick="ui.showEditOrganizationModal('${org._id}', '${org.name}', '${org.description || ''}')">Edit</button>
+                    <button class="btn btn--danger" onclick="ui.showDeleteOrganizationModal('${org._id}', '${org.name}')">Delete</button>
+                </div>
             `;
             list.appendChild(item);
         });
@@ -387,9 +399,13 @@ class CLIWebUI {
         users.forEach(user => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${user.email} - ${user.role}</span>
-                <button class="btn btn--secondary" onclick="ui.showJoinEventModal('${user._id}')">Join Event</button>
-                <button class="btn btn--danger" onclick="ui.showUnjoinEventModal('${user._id}')">Un-join Event</button>
+                <div class="list-item-content">
+                    <span>${user.email} - ${user.role}</span>
+                </div>
+                <div class="list-item-actions button-group">
+                    <button class="btn btn--secondary" onclick="ui.showJoinEventModal('${user._id}')">Join Event</button>
+                    <button class="btn btn--danger" onclick="ui.showUnjoinEventModal('${user._id}')">Un-join Event</button>
+                </div>
             `;
             list.appendChild(item);
         });

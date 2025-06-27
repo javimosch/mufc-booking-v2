@@ -270,8 +270,12 @@ class EmbedUI {
         events.forEach(event => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <span>${event.title}</span>
-                <button class="btn btn--primary" onclick="embedUi.showJoinModal('${event._id}')">${this.translations[this.currentLanguage].join}</button>
+                <div class="list-item-content">
+                    <span>${event.title}</span>
+                </div>
+                <div class="list-item-actions button-group">
+                    <button class="btn btn--primary" onclick="embedUi.showJoinModal('${event._id}')">${this.translations[this.currentLanguage].join}</button>
+                </div>
             `;
             list.appendChild(item);
         });
@@ -313,7 +317,11 @@ class EmbedUI {
         const list = document.createElement('ul');
         subscriptions.forEach(sub => {
             const item = document.createElement('li');
-            item.textContent = sub.metadata.nickname || sub.userId; // Display nickname if available, otherwise userId
+            item.innerHTML = `
+                <div class="list-item-content">
+                    <span>${sub.metadata.nickname || sub.userId}</span>
+                </div>
+            `;
             list.appendChild(item);
         });
         this.joinedUsersList.innerHTML = '';
