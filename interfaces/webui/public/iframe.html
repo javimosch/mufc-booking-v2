@@ -11,9 +11,7 @@
         <main class="main-content">
             <div id="embed-section" class="card">
                 <div id="single-event-mode" style="display: none;">
-                    <h2 class="heading--section">📅 Match Event</h2>
-                    <div id="event-details"></div>
-                    <div class="form-group">
+                    <div class="form-group language-selector-group">
                         <label class="label" for="language-select">Language</label>
                         <select id="language-select" class="input">
                             <option value="fr">Français</option>
@@ -22,6 +20,8 @@
                             <option value="pr">Português</option>
                         </select>
                     </div>
+                    <h2 class="heading--section">📅 Match Event</h2>
+                    <div id="event-details"></div>
                     <div class="form-group">
                         <label class="label" for="nickname-input">Nickname</label>
                         <input type="text" id="nickname-input" class="input" placeholder="Enter your nickname...">
@@ -35,6 +35,7 @@
                     <div class="joined-users-section">
                         <h3>Joined Users:</h3>
                         <div id="joined-users-list"></div>
+                        <div id="participant-count"></div>
                     </div>
                 </div>
                 <div id="multi-event-mode" style="display: none;">

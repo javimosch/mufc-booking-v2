@@ -40,7 +40,8 @@ class EmbedUI {
                 repeats: 'Répétitions',
                 week: 'Hebdomadaire',
                 month: 'Mensuel',
-                none: 'Aucune'
+                none: 'Aucune',
+                totalParticipants: 'Total des participants: {count}'
             },
             en: {
                 matchEvent: 'Match Event',
@@ -67,7 +68,8 @@ class EmbedUI {
                 repeats: 'Repeats',
                 week: 'Weekly',
                 month: 'Monthly',
-                none: 'None'
+                none: 'None',
+                totalParticipants: 'Total participants: {count}'
             },
             es: {
                 matchEvent: 'Evento de Partido',
@@ -94,7 +96,8 @@ class EmbedUI {
                 repeats: 'Repeticiones',
                 week: 'Semanal',
                 month: 'Mensual',
-                none: 'Ninguna'
+                none: 'Ninguna',
+                totalParticipants: 'Total de participantes: {count}'
             },
             pr: {
                 matchEvent: 'Evento de Partida',
@@ -121,7 +124,8 @@ class EmbedUI {
                 repeats: 'Repetições',
                 week: 'Semanal',
                 month: 'Mensal',
-                none: 'Nenhuma'
+                none: 'Nenhuma',
+                totalParticipants: 'Total de participantes: {count}'
             }
         };
         this.currentLanguage = localStorage.getItem('language') || 'fr'; // Default to French
@@ -142,6 +146,7 @@ class EmbedUI {
         this.joinBtn = document.getElementById('join-btn');
         this.unjoinBtn = document.getElementById('unjoin-btn');
         this.joinedUsersList = document.getElementById('joined-users-list');
+        this.participantCount = document.getElementById('participant-count');
         this.languageSelect = document.getElementById('language-select');
         
         // Set the language selector to the current language
@@ -370,6 +375,7 @@ class EmbedUI {
     }
 
     renderJoinedUsers(subscriptions) {
+        this.participantCount.textContent = this.translations[this.currentLanguage].totalParticipants.replace('{count}', subscriptions.length);
         if (subscriptions.length === 0) {
             this.joinedUsersList.innerHTML = `<p>${this.translations[this.currentLanguage].noOneJoined}</p>`;
             return;
