@@ -10,7 +10,8 @@ async function manageWebUIUsers(cli) {
     console.log('2. Add WebUI User');
     console.log('3. Update WebUI User');
     console.log('4. Delete WebUI User');
-    console.log('5. Back to Main Menu');
+    console.log('5. Promote User to Org Admin');
+    console.log('6. Back to Main Menu');
     console.log();
 
     const choice = await cli.question('Select an option: ');
@@ -29,6 +30,9 @@ async function manageWebUIUsers(cli) {
         await deleteWebUIUser(cli);
         break;
       case '5':
+        await promoteUserToOrgAdmin(cli);
+        break;
+      case '6':
         return;
       default:
         console.log('❌ Invalid option. Please try again.');
@@ -66,32 +70,44 @@ async function addWebUIUser(cli) {
     return;
   }
 
-  const role = await cli.question('Enter role (user/admin, default: user): ') || 'user';
-  if (!['user', 'admin'].includes(role)) {
-    console.log('❌ Invalid role. Must be \'user\' or \'admin\'.');
+  const role = await cli.question('Enter role (user/orgAdmin/superAdmin, default: user): ') || 'user';
+  if (!['user', 'orgAdmin', 'superAdmin'].includes(role)) {
+    console.log('❌ Invalid role. Must be \'user\', \'orgAdmin\', or \'superAdmin\'.');
     await cli.question('\nPress Enter to continue...');
     return;
   }
 
-  const organizations = await Organization.find();
-  if (organizations.length === 0) {
-    console.log('❌ No organizations found. Please create an organization first.');
-    await cli.question('\nPress Enter to continue...');
-    return;
-  }
-
-  console.log('Available Organizations:');
-  organizations.forEach((org, index) => {
-    console.log(`${index + 1}. ${org.name} (ID: ${org._id})`);
-  });
-
-  const orgChoice = await cli.question('Select organization by number or ID: ');
   let organizationId;
+  
+  // For orgAdmin and user roles, require organization assignment
+  if (role === 'orgAdmin' || role === 'user') {
+    const organizations = await Organization.find();
+    if (organizations.length === 0) {
+      console.log('❌ No organizations found. Please create an organization first.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
 
-  if (!isNaN(orgChoice) && parseInt(orgChoice) > 0 && parseInt(orgChoice) <= organizations.length) {
-    organizationId = organizations[parseInt(orgChoice) - 1]._id;
+    console.log('Available Organizations:');
+    organizations.forEach((org, index) => {
+      console.log(`${index + 1}. ${org.name} (ID: ${org._id})`);
+    });
+
+    const orgChoice = await cli.question('Select organization by number or ID: ');
+
+    if (!isNaN(orgChoice) && parseInt(orgChoice) > 0 && parseInt(orgChoice) <= organizations.length) {
+      organizationId = organizations[parseInt(orgChoice) - 1]._id;
+    } else {
+      organizationId = orgChoice;
+    }
   } else {
-    organizationId = orgChoice;
+    // SuperAdmin doesn't need organization assignment
+    organizationId = await Organization.findOne().then(org => org ? org._id : null);
+    if (!organizationId) {
+      console.log('❌ No organizations found. Please create an organization first.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
   }
 
   try {
@@ -118,13 +134,13 @@ async function updateWebUIUser(cli) {
   
       const newEmail = await cli.question(`Enter new email (current: ${user.email}): `);
       const newPassword = await cli.question('Enter new password (leave blank to keep current): ');
-      const newRole = await cli.question(`Enter new role (user/admin, current: ${user.role}, leave blank to keep current): `);
+      const newRole = await cli.question(`Enter new role (user/orgAdmin/superAdmin, current: ${user.role}, leave blank to keep current): `);
 
       if (newEmail) user.email = newEmail;
       if (newPassword) user.password = newPassword; // Pre-save hook will hash it
       if (newRole) {
-        if (!['user', 'admin'].includes(newRole)) {
-          console.log('❌ Invalid role. Must be \'user\' or \'admin\'.');
+        if (!['user', 'orgAdmin', 'superAdmin'].includes(newRole)) {
+          console.log('❌ Invalid role. Must be \'user\', \'orgAdmin\', or \'superAdmin\'.');
           await cli.question('\nPress Enter to continue...');
           return;
         }
@@ -138,7 +154,7 @@ async function updateWebUIUser(cli) {
     }
     await cli.question('\nPress Enter to continue...');
 }
-  
+
 async function deleteWebUIUser(cli) {
     console.log('\n--- Deleting a WebUI User ---');
     const email = await cli.question('Enter the email of the WebUI user to delete: ');
@@ -154,6 +170,62 @@ async function deleteWebUIUser(cli) {
       console.error('❌ Error deleting WebUI user:', error.message);
     }
     await cli.question('\nPress Enter to continue...');
+}
+
+async function promoteUserToOrgAdmin(cli) {
+  console.log('\n--- Promote User to Organization Admin ---');
+  const email = await cli.question('Enter the email of the user to promote: ');
+
+  try {
+    const user = await WebUIUser.findOne({ email });
+    if (!user) {
+      console.log('❌ User not found.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
+
+    if (user.role === 'orgAdmin') {
+      console.log('ℹ️ User is already an organization admin.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
+
+    if (user.role === 'superAdmin') {
+      console.log('ℹ️ Cannot change role of a super admin.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
+
+    const organizations = await Organization.find();
+    if (organizations.length === 0) {
+      console.log('❌ No organizations found. Please create an organization first.');
+      await cli.question('\nPress Enter to continue...');
+      return;
+    }
+
+    console.log('Available Organizations:');
+    organizations.forEach((org, index) => {
+      console.log(`${index + 1}. ${org.name} (ID: ${org._id})`);
+    });
+
+    const orgChoice = await cli.question('Select organization by number or ID: ');
+    let organizationId;
+
+    if (!isNaN(orgChoice) && parseInt(orgChoice) > 0 && parseInt(orgChoice) <= organizations.length) {
+      organizationId = organizations[parseInt(orgChoice) - 1]._id;
+    } else {
+      organizationId = orgChoice;
+    }
+
+    user.role = 'orgAdmin';
+    user.organizationId = organizationId;
+    await user.save();
+
+    console.log('✅ User promoted to organization admin successfully!');
+  } catch (error) {
+    console.error('❌ Error promoting user:', error.message);
+  }
+  await cli.question('\nPress Enter to continue...');
 }
 
 module.exports = manageWebUIUsers;

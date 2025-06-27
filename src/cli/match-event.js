@@ -1,6 +1,13 @@
 const { MatchEvent, User } = require('../../utils/schemas');
 
 async function manageMatchEvents(cli) {
+  // Check if user has appropriate role
+  if (!['orgAdmin', 'superAdmin'].includes(cli.currentUserRole)) {
+    console.log('❌ Access denied. Match event management is restricted to organization administrators and super administrators.');
+    await cli.question('Press Enter to continue...');
+    return;
+  }
+
   while (true) {
     console.clear();
     console.log('📅 Manage Match Events');
@@ -46,7 +53,14 @@ async function manageMatchEvents(cli) {
 
 async function listMatchEvents(cli) {
   console.log('\n--- Listing Match Events ---');
-  const events = await MatchEvent.find();
+  
+  let query = {};
+  // If orgAdmin, only show events from their organization
+  if (cli.currentUserRole === 'orgAdmin' && cli.currentUser) {
+    query.organizationId = cli.currentUser.organizationId;
+  }
+  
+  const events = await MatchEvent.find(query);
   if (events.length === 0) {
     console.log('No match events found.');
   } else {
@@ -60,6 +74,7 @@ async function listMatchEvents(cli) {
 async function addMatchEvent(cli) {
   console.log('\n--- Adding a new Match Event ---');
   const title = await cli.question('Enter event title: ');
+  const startDate = await cli.question('Enter start date (YYYY-MM-DD): ');
   const repeatEach = await cli.question('Repeat each (none, week, month): ');
 
   if (!title) {
@@ -68,8 +83,47 @@ async function addMatchEvent(cli) {
     return;
   }
 
+  if (!startDate) {
+    console.log('❌ Start date is required.');
+    await cli.question('\nPress Enter to continue...');
+    return;
+  }
+
   try {
-    const newEvent = new MatchEvent({ title, repeatEach });
+    let organizationId;
+    
+    // If orgAdmin, use their organization
+    if (cli.currentUserRole === 'orgAdmin' && cli.currentUser) {
+      organizationId = cli.currentUser.organizationId;
+    } else {
+      // If superAdmin, let them choose organization
+      const { Organization } = require('../../utils/schemas');
+      const organizations = await Organization.find();
+      if (organizations.length === 0) {
+        console.log('❌ No organizations found. Please create an organization first.');
+        await cli.question('\nPress Enter to continue...');
+        return;
+      }
+
+      console.log('Available Organizations:');
+      organizations.forEach((org, index) => {
+        console.log(`${index + 1}. ${org.name} (ID: ${org._id})`);
+      });
+
+      const orgChoice = await cli.question('Select organization by number or ID: ');
+      if (!isNaN(orgChoice) && parseInt(orgChoice) > 0 && parseInt(orgChoice) <= organizations.length) {
+        organizationId = organizations[parseInt(orgChoice) - 1]._id;
+      } else {
+        organizationId = orgChoice;
+      }
+    }
+
+    const newEvent = new MatchEvent({ 
+      title, 
+      startDate: new Date(startDate),
+      repeatEach,
+      organizationId 
+    });
     await newEvent.save();
     console.log('✅ Match Event added successfully!');
   } catch (error) {

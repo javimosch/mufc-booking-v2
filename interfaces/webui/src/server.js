@@ -121,7 +121,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ userId: user._id, organizationId: user.organizationId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user._id, organizationId: user.organizationId, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.json({ token });
     } catch (error) {
         console.error('Login error:', error);
@@ -129,8 +129,8 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Middleware to verify token
-const authMiddleware = (req, res, next) => {
+// Middleware to verify token and role
+const authMiddleware = (allowedRoles) => (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -139,6 +139,11 @@ const authMiddleware = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
+
+        if (allowedRoles && !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         next();
     } catch (error) {
         res.status(401).json({ error: 'Unauthorized' });
@@ -146,7 +151,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 // Create match event
-app.post('/api/match-events', authMiddleware, async (req, res) => {
+app.post('/api/match-events', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { title, startDate, repeatEach } = req.body;
         const newEvent = new MatchEvent({
@@ -164,7 +169,7 @@ app.post('/api/match-events', authMiddleware, async (req, res) => {
 });
 
 // Join user to event
-app.post('/api/match-events/:eventId/join', authMiddleware, async (req, res) => {
+app.post('/api/match-events/:eventId/join', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { eventId } = req.params;
         const { userId } = req.body;
@@ -190,7 +195,7 @@ app.post('/api/match-events/:eventId/join', authMiddleware, async (req, res) => 
 });
 
 // Un-join user from event
-app.post('/api/match-events/:eventId/unjoin', authMiddleware, async (req, res) => {
+app.post('/api/match-events/:eventId/unjoin', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { eventId } = req.params;
         const { userId } = req.body;
@@ -217,7 +222,7 @@ app.post('/api/match-events/:eventId/unjoin', authMiddleware, async (req, res) =
 });
 
 // Cancel match event iteration
-app.post('/api/match-events/:eventId/cancel', authMiddleware, async (req, res) => {
+app.post('/api/match-events/:eventId/cancel', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { eventId } = req.params;
         const { date } = req.body;
@@ -249,7 +254,7 @@ app.post('/api/match-events/:eventId/cancel', authMiddleware, async (req, res) =
 });
 
 // Uncancel match event iteration
-app.post('/api/match-events/:eventId/uncancel', authMiddleware, async (req, res) => {
+app.post('/api/match-events/:eventId/uncancel', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { eventId } = req.params;
         const { date } = req.body;
@@ -358,7 +363,7 @@ app.get('/api/public/match-events', async (req, res) => {
 });
 
 // Get match events
-app.get('/api/match-events', authMiddleware, async (req, res) => {
+app.get('/api/match-events', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const events = await MatchEvent.find({ organizationId: req.user.organizationId });
         // For events without a startDate, use createdAt as a fallback
@@ -390,7 +395,7 @@ app.get('/api/match-events/:eventId', async (req, res) => {
 });
 
 // Create WebUI user
-app.post('/api/users', authMiddleware, async (req, res) => {
+app.post('/api/users', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { email, password, role } = req.body;
         const newWebUIUser = new WebUIUser({
@@ -402,15 +407,21 @@ app.post('/api/users', authMiddleware, async (req, res) => {
         await newWebUIUser.save();
         res.status(201).json(newWebUIUser);
     } catch (error) {
-        console.error('Create WebUI user error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error creating user:', error);
+        res.status(400).json({ error: 'Error creating user' });
     }
 });
 
-// Get WebUI users
-app.get('/api/users', authMiddleware, async (req, res) => {
+app.get('/api/users', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
-        const users = await WebUIUser.find({ organizationId: req.user.organizationId });
+        let users;
+        if (req.user.role === 'superAdmin') {
+            // Super admins can see all users from all organizations
+            users = await WebUIUser.find({}).select('-password');
+        } else {
+            // Org admins can only see users in their own organization
+            users = await WebUIUser.find({ organizationId: req.user.organizationId }).select('-password');
+        }
         res.json(users);
     } catch (error) {
         console.error('Get WebUI users error:', error);
@@ -418,19 +429,37 @@ app.get('/api/users', authMiddleware, async (req, res) => {
     }
 });
 
-// Get organizations
-app.get('/api/organizations', authMiddleware, async (req, res) => {
+// Update user role (promote to orgAdmin)
+app.put('/api/users/:id/role', authMiddleware(['superAdmin']), async (req, res) => {
     try {
-        const organizations = await Organization.find();
-        res.json(organizations);
+        const { role, organizationId } = req.body;
+        const userToUpdate = await WebUIUser.findById(req.params.id);
+
+        if (!userToUpdate) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Only allow promotion to orgAdmin for now
+        if (role !== 'orgAdmin') {
+            return res.status(400).json({ error: 'Invalid role specified.' });
+        }
+
+        userToUpdate.role = role;
+        if (organizationId) {
+            userToUpdate.organizationId = organizationId;
+        }
+        
+        await userToUpdate.save();
+
+        res.json(userToUpdate);
     } catch (error) {
-        console.error('Get organizations error:', error);
+        console.error('Update user role error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Create organization
-app.post('/api/organizations', authMiddleware, async (req, res) => {
+app.post('/api/organizations', authMiddleware(['superAdmin']), async (req, res) => {
     try {
         const { name, description } = req.body;
         const newOrganization = new Organization({
@@ -446,7 +475,7 @@ app.post('/api/organizations', authMiddleware, async (req, res) => {
 });
 
 // Update organization
-app.put('/api/organizations/:id', authMiddleware, async (req, res) => {
+app.put('/api/organizations/:id', authMiddleware(['superAdmin']), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description } = req.body;
@@ -468,7 +497,7 @@ app.put('/api/organizations/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete organization
-app.delete('/api/organizations/:id', authMiddleware, async (req, res) => {
+app.delete('/api/organizations/:id', authMiddleware(['superAdmin']), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -495,7 +524,7 @@ app.delete('/api/organizations/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete match event
-app.delete('/api/match-events/:eventId', authMiddleware, async (req, res) => {
+app.delete('/api/match-events/:eventId', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const { eventId } = req.params;
 

@@ -2,6 +2,7 @@ class CLIWebUI {
     constructor() {
         this.token = null;
         this.organizationId = null;
+        this.userRole = null;
         this.initializeElements();
         this.bindEvents();
         this.checkLoginStatus();
@@ -20,17 +21,20 @@ class CLIWebUI {
     checkLoginStatus() {
         const storedToken = localStorage.getItem('jwtToken');
         const storedOrgId = localStorage.getItem('organizationId');
-        if (storedToken && storedOrgId) {
+        const storedRole = localStorage.getItem('userRole');
+        if (storedToken && storedOrgId && storedRole) {
             if (this.isTokenExpired(storedToken)) {
                 this.addLog('info', 'Token expired. Please log in again.');
                 this.logout(); // Clear token and redirect to login
             } else {
                 this.token = storedToken;
                 this.organizationId = storedOrgId;
+                this.userRole = storedRole;
                 this.loginSection.style.display = 'none';
                 this.dashboardSection.style.display = 'grid';
                 this.addLog('success', '✅ Auto-logged in');
                 this.loadDashboard();
+                this.updateUIVisibility();
             }
         } else {
             this.loginSection.style.display = 'flex';
@@ -113,12 +117,15 @@ class CLIWebUI {
             // Decode the token to get organizationId
             const payload = JSON.parse(atob(data.token.split('.')[1]));
             this.organizationId = payload.organizationId;
+            this.userRole = payload.role;
             localStorage.setItem('organizationId', this.organizationId);
+            localStorage.setItem('userRole', this.userRole);
             this.loginSection.style.display = 'none';
             this.dashboardSection.style.display = 'grid';
             this.logoutBtn.style.display = 'block';
             this.addLog('success', '✅ Login successful');
             this.loadDashboard();
+            this.updateUIVisibility();
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
         }
@@ -151,11 +158,28 @@ class CLIWebUI {
         this.loadOrganizations();
     }
 
+    updateUIVisibility() {
+        const orgManagementPanel = document.getElementById('organizations-content').closest('.card');
+        const eventManagementPanel = document.getElementById('match-events-content').closest('.card');
+        const usersPanel = document.getElementById('users-content').closest('.card');
+
+        // Default visibility
+        orgManagementPanel.style.display = 'none';
+        eventManagementPanel.style.display = 'none';
+        usersPanel.style.display = 'block'; // Users panel is visible to admins
+
+        if (this.userRole === 'superAdmin') {
+            orgManagementPanel.style.display = 'block';
+        } else if (this.userRole === 'orgAdmin') {
+            eventManagementPanel.style.display = 'block';
+        } else {
+            // Hide all admin panels for regular users
+            this.dashboardSection.style.display = 'none';
+        }
+    }
+
     async loadPublicEventLinks() {
         try {
-            // Assuming the organizationId can be retrieved from the logged-in user's token
-            // For now, we'll use a placeholder or fetch it if available in the token payload
-            // This needs to be properly handled on the backend to return organizationId with user data
             const response = await this.authenticatedFetch(`/api/public/match-events?organizationId=${this.organizationId}`);
             if (!response.ok) throw new Error('Failed to load match events for public links');
             const events = await response.json();
@@ -172,8 +196,6 @@ class CLIWebUI {
         }
         const list = document.createElement('ul');
         events.forEach(event => {
-            // Assuming the organizationId is available in the event object or from the user's token
-            // For now, using a placeholder. This needs to be properly handled.
             const organizationId = this.organizationId;
             const publicLink = `${window.location.origin}/iframe?eventId=${event._id}&organizationId=${organizationId}`;
             const iframeCode = `<iframe src="${publicLink}" width="600" height="400" frameborder="0"></iframe>`;
@@ -187,7 +209,7 @@ class CLIWebUI {
                     </div>
                 </div>
                 <div class="list-item-actions button-group">
-                    <button class="btn btn--secondary copy-btn" data-clipboard-target='${iframeCode}'>Copy</button>
+                    <button class="btn btn--secondary copy-btn" data-clipboard-text="${iframeCode}">Copy</button>
                 </div>
             `;
             list.appendChild(item);
@@ -195,14 +217,12 @@ class CLIWebUI {
         this.publicEventLinksContent.innerHTML = '';
         this.publicEventLinksContent.appendChild(list);
 
-        // Add event listeners for copy buttons
         document.querySelectorAll('.copy-btn').forEach(button => {
-            button.addEventListener('click', (event) => this.copyToClipboard(event));
+            button.addEventListener('click', (event) => this.copyToClipboard(event.target.dataset.clipboardText));
         });
     }
 
-    copyToClipboard(event) {
-        const textToCopy = event.target.dataset.clipboardTarget;
+    copyToClipboard(textToCopy) {
         navigator.clipboard.writeText(textToCopy).then(() => {
             this.addLog('success', '✅ Copied to clipboard!');
         }).catch(err => {
@@ -280,7 +300,7 @@ class CLIWebUI {
         this.matchEventsContent.innerHTML = '';
         this.matchEventsContent.appendChild(list);
     }
-
+    
     async toggleCancelEventIteration(eventId, date, action) {
         try {
             const response = await this.authenticatedFetch(`/api/match-events/${eventId}/${action}`, {
@@ -295,7 +315,7 @@ class CLIWebUI {
                 throw new Error(`Failed to ${action} event iteration`);
             }
 
-            this.addLog('success', `✅ Event iteration ${action}led successfully`);
+            this.addLog('success', `✅ Event iteration ${action}ed successfully`);
             this.loadMatchEvents(); // Reload events to update UI
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
@@ -361,16 +381,16 @@ class CLIWebUI {
     showAddOrganizationModal() {
         this.showModal('Add Organization', this.getOrganizationForm(), () => this.addOrganization());
     }
-
-    getOrganizationForm() {
+    
+    getOrganizationForm(name = '', description = '') {
         return `
             <div class="form-group">
                 <label class="label" for="org-name-input">Name</label>
-                <input type="text" id="org-name-input" class="input" placeholder="Organization name...">
+                <input type="text" id="org-name-input" class="input" placeholder="Organization name..." value="${name}">
             </div>
             <div class="form-group">
                 <label class="label" for="org-description-input">Description</label>
-                <input type="text" id="org-description-input" class="input" placeholder="Description...">
+                <input type="text" id="org-description-input" class="input" placeholder="Description..." value="${description}">
             </div>
         `;
     }
@@ -403,24 +423,15 @@ class CLIWebUI {
             this.addLog('error', `❌ ${error.message}`);
         }
     }
-
+    
     showEditOrganizationModal(id, currentName, currentDescription) {
-        const form = `
-            <div class="form-group">
-                <label class="label" for="edit-org-name-input">Name</label>
-                <input type="text" id="edit-org-name-input" class="input" value="${currentName}" placeholder="Organization name...">
-            </div>
-            <div class="form-group">
-                <label class="label" for="edit-org-description-input">Description</label>
-                <input type="text" id="edit-org-description-input" class="input" value="${currentDescription}" placeholder="Description...">
-            </div>
-        `;
+        const form = this.getOrganizationForm(currentName, currentDescription);
         this.showModal('Edit Organization', form, () => this.editOrganization(id));
     }
 
     async editOrganization(id) {
-        const name = document.getElementById('edit-org-name-input').value.trim();
-        const description = document.getElementById('edit-org-description-input').value.trim();
+        const name = document.getElementById('org-name-input').value.trim();
+        const description = document.getElementById('org-description-input').value.trim();
 
         if (!name) {
             this.addLog('error', '❌ Organization name is required');
@@ -430,9 +441,7 @@ class CLIWebUI {
         try {
             const response = await this.authenticatedFetch(`/api/organizations/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, description })
             });
 
@@ -446,9 +455,9 @@ class CLIWebUI {
             this.addLog('error', `❌ ${error.message}`);
         }
     }
-
+    
     showDeleteOrganizationModal(id, name) {
-        const message = `<p>Are you sure you want to delete the organization <strong>${name}</strong>? This action cannot be undone and will delete all associated users and match events.</p>`;
+        const message = `<p>Are you sure you want to delete <strong>${name}</strong>? This is irreversible.</p>`;
         this.showModal('Delete Organization', message, () => this.deleteOrganization(id));
     }
 
@@ -462,7 +471,7 @@ class CLIWebUI {
                 throw new Error('Failed to delete organization');
             }
 
-            this.addLog('success', '✅ Organization and associated data deleted successfully');
+            this.addLog('success', '✅ Organization deleted successfully');
             this.loadOrganizations();
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
@@ -477,13 +486,16 @@ class CLIWebUI {
         const list = document.createElement('ul');
         users.forEach(user => {
             const item = document.createElement('li');
+            let actions = '';
+            if (this.userRole === 'superAdmin' && user.role !== 'orgAdmin') {
+                actions = `<button class="btn btn--secondary" onclick="ui.showPromoteUserModal('${user._id}', '${user.email}')">Promote to Admin</button>`;
+            }
             item.innerHTML = `
                 <div class="list-item-content">
-                    <span>${user.email} - ${user.role}</span>
+                    <span>${user.email} (${user.role})</span>
                 </div>
                 <div class="list-item-actions button-group">
-                    <button class="btn btn--secondary" onclick="ui.showJoinEventModal('${user._id}')">Join Event</button>
-                    <button class="btn btn--danger" onclick="ui.showUnjoinEventModal('${user._id}')">Un-join Event</button>
+                    ${actions}
                 </div>
             `;
             list.appendChild(item);
@@ -492,130 +504,43 @@ class CLIWebUI {
         this.usersContent.appendChild(list);
     }
 
-    async showJoinEventModal(userId) {
-        try {
-            const response = await this.authenticatedFetch('/api/match-events');
-            if (!response.ok) throw new Error('Failed to load match events');
-            const events = await response.json();
-            const form = this.getJoinEventForm(events);
-            this.showModal('Join User to Event', form, () => this.joinUserToEvent(userId));
-        } catch (error) {
-            this.addLog('error', `❌ ${error.message}`);
-        }
+    showPromoteUserModal(userId, userEmail) {
+        const message = `<p>Promote <strong>${userEmail}</strong> to an Organization Admin?</p>`;
+        this.showModal('Promote User', message, () => this.promoteUser(userId));
     }
 
-    async showUnjoinEventModal(userId) {
+    async promoteUser(userId) {
         try {
-            const response = await this.authenticatedFetch('/api/match-events');
-            if (!response.ok) throw new Error('Failed to load match events');
-            const events = await response.json();
-            const form = this.getJoinEventForm(events);
-            this.showModal('Un-join User from Event', form, () => this.unjoinUserFromEvent(userId));
-        } catch (error) {
-            this.addLog('error', `❌ ${error.message}`);
-        }
-    }
-
-    getJoinEventForm(events) {
-        let options = '<option value="">Select an event</option>';
-        events.forEach(event => {
-            options += `<option value="${event._id}">${event.title}</option>`;
-        });
-
-        return `
-            <div class="form-group">
-                <label class="label" for="event-select">Event</label>
-                <select id="event-select" class="input">${options}</select>
-            </div>
-        `;
-    }
-
-    async joinUserToEvent(userId) {
-        const eventId = document.getElementById('event-select').value;
-        if (!eventId) {
-            this.addLog('error', '❌ Please select an event');
-            return;
-        }
-
-        try {
-            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/join`, {
-                method: 'POST',
+            const response = await this.authenticatedFetch(`/api/users/${userId}/role`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ userId })
+                body: JSON.stringify({ role: 'orgAdmin' })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to join event');
+                throw new Error('Failed to promote user');
             }
 
-            this.addLog('success', '✅ User joined event successfully');
+            this.addLog('success', '✅ User promoted successfully');
+            this.loadUsers();
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
         }
     }
 
-    async unjoinUserFromEvent(userId) {
-        const eventId = document.getElementById('event-select').value;
-        if (!eventId) {
-            this.addLog('error', '❌ Please select an event');
-            return;
-        }
-
-        try {
-            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/unjoin`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to un-join event');
-            }
-
-            this.addLog('success', '✅ User un-joined event successfully');
-        } catch (error) {
-            this.addLog('error', `❌ ${error.message}`);
-        }
-    }
-
-    async showCancelEventModal(eventId) {
-        const form = `
-            <div class="form-group">
-                <label class="label" for="cancel-date-input">Date to cancel</label>
-                <input type="date" id="cancel-date-input" class="input">
-            </div>
-        `;
-        this.showModal('Cancel Match Event Iteration', form, () => this.cancelEventIteration(eventId));
-    }
-
-    async cancelEventIteration(eventId) {
-        const date = document.getElementById('cancel-date-input').value;
-        if (!date) {
-            this.addLog('error', '❌ Please select a date');
-            return;
-        }
-
-        try {
-            const response = await this.authenticatedFetch(`/api/match-events/${eventId}/cancel`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ date })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to cancel event iteration');
-            }
-
-            this.addLog('success', '✅ Event iteration cancelled successfully');
-        } catch (error) {
-            this.addLog('error', `❌ ${error.message}`);
-        }
+    logout() {
+        this.token = null;
+        this.organizationId = null;
+        this.userRole = null;
+        localStorage.removeItem('jwtToken');
+        localStorage.removeItem('organizationId');
+        localStorage.removeItem('userRole');
+        this.loginSection.style.display = 'flex';
+        this.dashboardSection.style.display = 'none';
+        this.logoutBtn.style.display = 'none';
+        this.addLog('info', '👋 Logged out');
     }
 
     addLog(type, message) {
@@ -631,7 +556,6 @@ class CLIWebUI {
         this.modalTitle.textContent = title;
         this.modalMessage.innerHTML = message;
 
-        // Clone and replace the OK button to remove old event listeners
         const newOk = this.modalOk.cloneNode(true);
         this.modalOk.parentNode.replaceChild(newOk, this.modalOk);
         this.modalOk = newOk;
@@ -689,7 +613,7 @@ class CLIWebUI {
                 <label class="label" for="user-role-select">Role</label>
                 <select id="user-role-select" class="input">
                     <option value="user">User</option>
-                    <option value="admin">Admin</option>
+                    <option value="orgAdmin">Org Admin</option>
                 </select>
             </div>
         `;
@@ -698,8 +622,8 @@ class CLIWebUI {
     async addEvent() {
         const title = document.getElementById('event-title-input').value.trim();
         const startDate = new Date(document.getElementById('event-start-date-input').value);
-        const isoStartDate = startDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-        const repeatEach = document.getElementById('event-repeat-select').value; // Get repeatEach value
+        const isoStartDate = startDate.toISOString().split('T')[0];
+        const repeatEach = document.getElementById('event-repeat-select').value;
 
         if (!title || !isoStartDate) {
             this.addLog('error', '❌ Event title and start date are required');
@@ -709,10 +633,8 @@ class CLIWebUI {
         try {
             const response = await this.authenticatedFetch('/api/match-events', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ title, startDate: isoStartDate, repeatEach }) // Send formatted date
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, startDate: isoStartDate, repeatEach })
             });
 
             if (!response.ok) {
@@ -739,9 +661,7 @@ class CLIWebUI {
         try {
             const response = await this.authenticatedFetch('/api/users', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, role })
             });
 
@@ -756,60 +676,34 @@ class CLIWebUI {
         }
     }
 
-    logout() {
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('organizationId');
-        this.token = null;
-        this.organizationId = null;
-        this.loginSection.style.display = 'flex';
-        this.dashboardSection.style.display = 'none';
-        this.logoutBtn.style.display = 'none';
-        this.addLog('info', '👋 Logged out');
-    }
-
-    // Helper function to calculate future event iterations
     getFutureIterations(event, count = 5) {
         const iterations = [];
-        // Ensure event.startDate is a valid date string before creating a Date object
-        if (!event.startDate || isNaN(new Date(event.startDate).getTime())) {
-            console.warn("Invalid startDate for event:", event);
-            return iterations; // Return empty array if startDate is invalid
-        }
+        if (!event.startDate) return iterations;
+
         let currentDate = new Date(event.startDate);
-        currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        // If the start date is in the past, advance to the next occurrence
-        while (currentDate < new Date()) {
-            if (event.repeatEach === 'week') {
-                currentDate.setDate(currentDate.getDate() + 7);
-            } else if (event.repeatEach === 'month') {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-            } else {
-                // No repeat, so only the start date is relevant
-                break;
+        while (iterations.length < count) {
+            if (currentDate >= today) {
+                const dateString = currentDate.toISOString().split('T')[0];
+                const isCancelled = event.cancelledDates.some(d => new Date(d).toISOString().split('T')[0] === dateString);
+                iterations.push({
+                    date: dateString,
+                    isCancelled: isCancelled
+                });
             }
-        }
-
-        for (let i = 0; i < count; i++) {
-            const iterationDate = new Date(currentDate);
-            const isCancelled = event.metadata && event.metadata.cancelledDates &&
-                                event.metadata.cancelledDates.includes(iterationDate.toISOString().split('T')[0]);
-            iterations.push({
-                date: iterationDate.toISOString().split('T')[0],
-                isCancelled: isCancelled
-            });
 
             if (event.repeatEach === 'week') {
                 currentDate.setDate(currentDate.getDate() + 7);
             } else if (event.repeatEach === 'month') {
                 currentDate.setMonth(currentDate.getMonth() + 1);
             } else {
-                // No repeat, only one iteration
-                break;
+                break; 
             }
         }
         return iterations;
     }
 }
 
-
+const ui = new CLIWebUI();

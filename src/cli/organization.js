@@ -1,6 +1,13 @@
 const { Organization, WebUIUser, MatchEvent, PassedMatchEvent } = require('../../utils/schemas');
 
 async function manageOrganizations(cli) {
+  // Check if user has superAdmin role
+  if (cli.currentUserRole !== 'superAdmin') {
+    console.log('❌ Access denied. Organization management is restricted to super administrators.');
+    await cli.question('Press Enter to continue...');
+    return;
+  }
+
   while (true) {
     console.clear();
     console.log('🏢 Manage Organizations');

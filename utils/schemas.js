@@ -10,7 +10,7 @@ const webUIUserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Added role field
+  role: { type: String, enum: ['user', 'orgAdmin', 'superAdmin'], default: 'user' },
 }, { timestamps: true });
 
 // Pre-save hook to hash password

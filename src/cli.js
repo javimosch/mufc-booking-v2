@@ -141,13 +141,16 @@ class GenericCLI {
     // Initialize managers
     this.configManager = new ConfigManager(CONFIG_FILE);
     this.fileOps = new FileOperations();
-    // this.processService = new ProcessService(); // No longer needed
     
     // Default speed settings
     this.speedSettings = SPEED_PRESETS.normal;
     
     // Database status
     this.databaseConnected = false;
+    
+    // Current user role (for role-based access control)
+    this.currentUserRole = null;
+    this.currentUser = null;
   }
 
   // Utility methods
@@ -159,11 +162,6 @@ class GenericCLI {
     // Initialize database connections
     try {
       this.databaseConnected = await this.configManager.initialize();
-      // await this.processService.initialize(); // No longer needed
-      
-      // if (this.databaseConnected) { // No longer needed
-      //   await this.processService.logActivity('CLI_STARTED', { timestamp: new Date() });
-      // }
     } catch (error) {
       console.log('⚠️  Database initialization failed, using file-based storage');
     }
@@ -173,6 +171,36 @@ class GenericCLI {
     // Load speed settings if saved
     if (this.config.speedPreset && SPEED_PRESETS[this.config.speedPreset]) {
       this.speedSettings = SPEED_PRESETS[this.config.speedPreset];
+    }
+
+    // Check for current user role
+    await this.checkUserRole();
+  }
+
+  async checkUserRole() {
+    if (!this.databaseConnected) {
+      // If no database, assume superAdmin for CLI access
+      this.currentUserRole = 'superAdmin';
+      return;
+    }
+
+    // Check if there's a configured super admin
+    if (this.config.currentUserEmail) {
+      try {
+        const { WebUIUser } = require('../utils/schemas');
+        const user = await WebUIUser.findOne({ email: this.config.currentUserEmail });
+        if (user) {
+          this.currentUser = user;
+          this.currentUserRole = user.role;
+        }
+      } catch (error) {
+        console.log('⚠️  Could not verify user role');
+      }
+    }
+
+    // If no user is set, prompt for login or assume superAdmin
+    if (!this.currentUserRole) {
+      this.currentUserRole = 'superAdmin'; // Default for CLI access
     }
   }
 
@@ -202,14 +230,7 @@ class GenericCLI {
   }
 
   displayMenu() {
-    const choices = [
-      { name: 'Manage Organizations', value: 'manageOrganizations' },
-      { name: 'Manage WebUI Users', value: 'manageWebUIUsers' },
-      
-      { name: 'Configure Super Admin', value: 'manageSuperAdmin' },
-      { name: 'Launch Web UI', value: 'launchWebUI' },
-      { name: 'Exit', value: 'exit' }
-    ];
+    const choices = this.getMenuChoices();
     console.log('📋 Main Menu:');
     console.log();
     choices.forEach((choice, index) => {
@@ -217,7 +238,26 @@ class GenericCLI {
     });
     console.log();
     console.log(`💾 Storage: ${this.databaseConnected ? 'MongoDB' : 'File-based'}`);
+    if (this.currentUserRole) {
+      console.log(`👤 Role: ${this.currentUserRole}`);
+    }
     console.log();
+  }
+
+  getMenuChoices() {
+    const allChoices = [
+      { name: 'Manage Organizations', value: 'manageOrganizations', roles: ['superAdmin'] },
+      { name: 'Manage WebUI Users', value: 'manageWebUIUsers', roles: ['superAdmin', 'orgAdmin'] },
+      { name: 'Manage Match Events', value: 'manageMatchEvents', roles: ['orgAdmin'] },
+      { name: 'Configure Super Admin', value: 'manageSuperAdmin', roles: ['superAdmin'] },
+      { name: 'Launch Web UI', value: 'launchWebUI', roles: ['superAdmin', 'orgAdmin'] },
+      { name: 'Exit', value: 'exit', roles: ['superAdmin', 'orgAdmin', 'user'] }
+    ];
+
+    // Filter choices based on current user role
+    return allChoices.filter(choice => 
+      !choice.roles || choice.roles.includes(this.currentUserRole)
+    );
   }
 
   // Core functionality will be replaced with management functions
@@ -236,13 +276,73 @@ class GenericCLI {
   }
 
   async manageSuperAdmin() {
-    this.displayHeader('Configure Super Admin');
-    const username = await this.question('Enter super admin username: ');
-    const password = await this.question('Enter super admin password: ', true);
-    this.config.superAdmin = { username, password };
-    await this.saveConfig();
-    console.log('Super admin configured successfully.');
-    await this.sleep(2000);
+    console.clear();
+    console.log('🔧 Configure Super Admin');
+    console.log('═══════════════════════');
+    
+    if (!this.databaseConnected) {
+      console.log('❌ Database connection required for user management.');
+      await this.question('Press Enter to continue...');
+      return;
+    }
+
+    const email = await this.question('Enter super admin email: ');
+    if (!email) {
+      console.log('❌ Email is required.');
+      await this.question('Press Enter to continue...');
+      return;
+    }
+
+    try {
+      const { WebUIUser, Organization } = require('../utils/schemas');
+      
+      // Check if user exists
+      let user = await WebUIUser.findOne({ email });
+      
+      if (user) {
+        // Update existing user to superAdmin
+        user.role = 'superAdmin';
+        await user.save();
+        console.log('✅ User updated to super admin successfully!');
+      } else {
+        // Create new superAdmin user
+        const password = await this.question('Enter password for new super admin: ');
+        if (!password) {
+          console.log('❌ Password is required.');
+          await this.question('Press Enter to continue...');
+          return;
+        }
+
+        // Get or create a default organization for the superAdmin
+        let org = await Organization.findOne();
+        if (!org) {
+          org = new Organization({ name: 'Default Organization', description: 'Default organization for system administration' });
+          await org.save();
+        }
+
+        user = new WebUIUser({
+          email,
+          password,
+          role: 'superAdmin',
+          organizationId: org._id
+        });
+        await user.save();
+        console.log('✅ Super admin created successfully!');
+      }
+
+      // Save current user email to config
+      this.config.currentUserEmail = email;
+      await this.saveConfig();
+      
+      // Update current user info
+      this.currentUser = user;
+      this.currentUserRole = 'superAdmin';
+      
+    } catch (error) {
+      console.error('❌ Error configuring super admin:', error.message);
+    }
+    
+    await this.question('Press Enter to continue...');
   }
 
   async launchWebUIFromMenu() {
@@ -292,19 +392,19 @@ class GenericCLI {
       this.displayHeader();
       this.displayMenu();
 
-      const choices = [
-        { name: 'Manage Organizations', value: 'manageOrganizations' },
-        { name: 'Manage WebUI Users', value: 'manageWebUIUsers' },
-        { name: 'Manage Match Events', value: 'manageMatchEvents' },
-        { name: 'Configure Super Admin', value: 'manageSuperAdmin' },
-        { name: 'Launch Web UI', value: 'launchWebUI' },
-        { name: 'Exit', value: 'exit' }
-      ];
+      const choices = this.getMenuChoices();
 
       const choice = await this.question(`Select an option (1-${choices.length}): `);
       const selectedChoice = choices[parseInt(choice.trim()) - 1];
 
       if (selectedChoice) {
+        // Check role permissions before executing
+        if (selectedChoice.roles && !selectedChoice.roles.includes(this.currentUserRole)) {
+          console.log('❌ Access denied. Insufficient permissions.');
+          await this.question('Press Enter to continue...');
+          continue;
+        }
+
         switch (selectedChoice.value) {
           case 'manageOrganizations':
             await this.manageOrganizations();
@@ -315,7 +415,6 @@ class GenericCLI {
           case 'manageMatchEvents':
             await this.manageMatchEvents();
             break;
-          
           case 'manageSuperAdmin':
             await this.manageSuperAdmin();
             break;
@@ -365,4 +464,3 @@ if (require.main === module) {
 }
 
 module.exports = GenericCLI;
-
