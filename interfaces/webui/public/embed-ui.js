@@ -1,4 +1,14 @@
 class EmbedUI {
+    // Helper function to format date to DD-MM-YYYY
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+
     constructor() {
         console.debug('EmbedUI constructor called');
         // Initialize current language from localStorage or default to 'en'
@@ -307,7 +317,7 @@ class EmbedUI {
         if (event.repeatEach !== 'none' && event.startDate) {
             const nextIteration = this.getNextIterationDate(event);
             if (nextIteration) {
-                nextIterationText = `<p>Next Iteration: ${nextIteration}</p>`;
+                nextIterationText = `<p>Next Iteration: ${this.formatDate(nextIteration)}</p>`;
             }
         }
 
