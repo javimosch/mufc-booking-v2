@@ -492,6 +492,25 @@ app.delete('/api/organizations/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// Delete match event
+app.delete('/api/match-events/:eventId', authMiddleware, async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        const event = await MatchEvent.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ error: 'Match Event not found' });
+        }
+
+        await event.deleteOne();
+
+        res.json({ message: 'Match Event deleted successfully' });
+    } catch (error) {
+        console.error('Delete match event error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get current configuration
 app.get('/api/config', async (req, res) => {
     try {

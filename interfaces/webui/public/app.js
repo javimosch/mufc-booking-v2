@@ -257,6 +257,9 @@ class CLIWebUI {
                     <h3>${event.title} (Repeats: ${event.repeatEach})</h3>
                     <p>Start Date: ${event.startDate}</p>
                 </div>
+                <div class="list-item-actions button-group">
+                    <button class="btn btn--danger" onclick="ui.showDeleteEventModal('${event._id}', '${event.title}')">Delete Event</button>
+                </div>
                 <div class="event-iterations">
                     <h4>Upcoming Iterations:</h4>
                     <ul>${iterationsHtml}</ul>
@@ -284,6 +287,28 @@ class CLIWebUI {
 
             this.addLog('success', `✅ Event iteration ${action}led successfully`);
             this.loadMatchEvents(); // Reload events to update UI
+        } catch (error) {
+            this.addLog('error', `❌ ${error.message}`);
+        }
+    }
+
+    showDeleteEventModal(eventId, eventTitle) {
+        const message = `<p>Are you sure you want to delete the event <strong>${eventTitle}</strong>? This action cannot be undone.</p>`;
+        this.showModal('Delete Event', message, () => this.deleteEvent(eventId));
+    }
+
+    async deleteEvent(eventId) {
+        try {
+            const response = await this.authenticatedFetch(`/api/match-events/${eventId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete event');
+            }
+
+            this.addLog('success', '✅ Event deleted successfully');
+            this.loadMatchEvents();
         } catch (error) {
             this.addLog('error', `❌ ${error.message}`);
         }
