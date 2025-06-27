@@ -359,7 +359,14 @@ app.get('/api/public/match-events', async (req, res) => {
 app.get('/api/match-events', authMiddleware, async (req, res) => {
     try {
         const events = await MatchEvent.find({ organizationId: req.user.organizationId });
-        res.json(events);
+        // For events without a startDate, use createdAt as a fallback
+        const eventsWithStartDates = events.map(event => {
+            if (!event.startDate) {
+                event.startDate = event.createdAt; // Use createdAt as fallback
+            }
+            return event;
+        });
+        res.json(eventsWithStartDates);
     } catch (error) {
         console.error('Get match events error:', error);
         res.status(500).json({ error: 'Internal server error' });
