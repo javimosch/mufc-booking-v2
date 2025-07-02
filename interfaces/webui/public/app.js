@@ -159,22 +159,36 @@ class CLIWebUI {
     }
 
     updateUIVisibility() {
-        const orgManagementPanel = document.getElementById('organizations-content').closest('.card');
-        const eventManagementPanel = document.getElementById('match-events-content').closest('.card');
-        const usersPanel = document.getElementById('users-content').closest('.card');
+        // Safely get elements and check if they exist
+        const orgContent = document.getElementById('organizations-content');
+        const eventContent = document.getElementById('match-events-content');
+        const usersContent = document.getElementById('users-content');
+        
+        // Safely get panels, checking if the content elements exist first
+        const orgManagementPanel = orgContent ? orgContent.closest('.card') : null;
+        const eventManagementPanel = eventContent ? eventContent.closest('.card') : null;
+        const usersPanel = usersContent ? usersContent.closest('.card') : null;
 
-        // Default visibility
-        orgManagementPanel.style.display = 'none';
-        eventManagementPanel.style.display = 'none';
-        usersPanel.style.display = 'block'; // Users panel is visible to admins
+        // Add debug logs
+        console.debug('UI elements found:', {
+            orgManagementPanel, 
+            eventManagementPanel, 
+            usersPanel,
+            userRole: this.userRole
+        });
+
+        // Default visibility - only set if elements exist
+        if (orgManagementPanel) orgManagementPanel.style.display = 'none';
+        if (eventManagementPanel) eventManagementPanel.style.display = 'none';
+        if (usersPanel) usersPanel.style.display = 'block'; // Users panel is visible to admins
 
         if (this.userRole === 'superAdmin') {
-            orgManagementPanel.style.display = 'block';
+            if (orgManagementPanel) orgManagementPanel.style.display = 'block';
         } else if (this.userRole === 'orgAdmin') {
-            eventManagementPanel.style.display = 'block';
+            if (eventManagementPanel) eventManagementPanel.style.display = 'block';
         } else {
             // Hide all admin panels for regular users
-            this.dashboardSection.style.display = 'none';
+            if (this.dashboardSection) this.dashboardSection.style.display = 'none';
         }
     }
 
@@ -687,7 +701,9 @@ class CLIWebUI {
         while (iterations.length < count) {
             if (currentDate >= today) {
                 const dateString = currentDate.toISOString().split('T')[0];
-                const isCancelled = event.cancelledDates.some(d => new Date(d).toISOString().split('T')[0] === dateString);
+                // Check if cancelledDates exists before calling .some()
+                const isCancelled = event.cancelledDates && Array.isArray(event.cancelledDates) ? 
+                    event.cancelledDates.some(d => new Date(d).toISOString().split('T')[0] === dateString) : false;
                 iterations.push({
                     date: dateString,
                     isCancelled: isCancelled
