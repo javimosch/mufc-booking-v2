@@ -104,6 +104,7 @@ class WebAPIManager extends GenericCLI {
 // API Routes
 
 // Login endpoint
+console.log("Login endpoint");
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -122,7 +123,12 @@ app.post('/api/login', async (req, res) => {
         }
 
         const token = jwt.sign({ userId: user._id, organizationId: user.organizationId, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token });
+        console.debug('Login successful:', { userId: user._id, organizationId: user.organizationId, role: user.role });
+        res.json({ 
+            token,
+            organizationId: user.organizationId,
+            role: user.role 
+        });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -351,10 +357,24 @@ app.post('/api/public/match-events/:eventId/unjoin', async (req, res) => {
 app.get('/api/public/match-events', async (req, res) => {
     try {
         const { organizationId } = req.query;
-        if (!organizationId) {
-            return res.status(400).json({ error: 'organizationId is required' });
+        
+        // Enhanced validation and debugging
+        console.debug('Public match events request with organizationId:', organizationId);
+        
+        // Handle missing or invalid organizationId
+        if (!organizationId || organizationId === 'undefined' || organizationId === 'null') {
+            console.debug('Invalid organizationId provided:', organizationId);
+            return res.status(200).json([]); // Return empty array instead of error
         }
+        
+        // Validate if organizationId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+            console.debug('Invalid ObjectId format for organizationId:', organizationId);
+            return res.status(200).json([]); // Return empty array for invalid ObjectId
+        }
+        
         const events = await MatchEvent.find({ organizationId });
+        console.debug(`Found ${events.length} events for organizationId:`, organizationId);
         res.json(events);
     } catch (error) {
         console.error('Get public match events error:', error);

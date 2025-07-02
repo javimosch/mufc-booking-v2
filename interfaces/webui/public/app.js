@@ -22,16 +22,50 @@ class CLIWebUI {
         const storedToken = localStorage.getItem('jwtToken');
         const storedOrgId = localStorage.getItem('organizationId');
         const storedRole = localStorage.getItem('userRole');
-        if (storedToken && storedOrgId && storedRole) {
+        const storedEmail = localStorage.getItem('userEmail');
+
+        console.debug('Checking login status:', { 
+            hasToken: !!storedToken, 
+            organizationId: storedOrgId,
+            role: storedRole,
+            email: storedEmail
+        });
+
+        if (storedToken) {
             if (this.isTokenExpired(storedToken)) {
                 this.addLog('info', 'Token expired. Please log in again.');
                 this.logout(); // Clear token and redirect to login
             } else {
                 this.token = storedToken;
-                this.organizationId = storedOrgId;
+                
+                // Ensure organizationId is valid and not 'undefined' or 'null' strings
+                if (storedOrgId && storedOrgId !== 'undefined' && storedOrgId !== 'null') {
+                    this.organizationId = storedOrgId;
+                } else {
+                    // Try to extract organizationId from JWT token
+                    try {
+                        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+                        this.organizationId = payload.organizationId || null;
+                        // Update localStorage with the extracted value if found
+                        if (this.organizationId) {
+                            localStorage.setItem('organizationId', this.organizationId);
+                        }
+                        console.debug('Extracted organizationId from token:', this.organizationId);
+                    } catch (e) {
+                        console.debug('Failed to extract organizationId from token:', e);
+                        this.organizationId = null;
+                    }
+                }
+                
                 this.userRole = storedRole;
+                this.userEmail = storedEmail || 'User';
+                
+                // Update UI for logged in state
                 this.loginSection.style.display = 'none';
                 this.dashboardSection.style.display = 'grid';
+                this.userControls.style.display = 'block';
+                this.userEmailDisplay.textContent = this.userEmail;
+                
                 this.addLog('success', '✅ Auto-logged in');
                 this.loadDashboard();
                 this.updateUIVisibility();
@@ -60,6 +94,8 @@ class CLIWebUI {
         this.passwordInput = document.getElementById('password-input');
         this.loginBtn = document.getElementById('login-btn');
         this.logoutBtn = document.getElementById('logout-btn');
+        this.userControls = document.getElementById('user-controls');
+        this.userEmailDisplay = document.getElementById('user-email-display');
 
         // Dashboard elements
         this.dashboardSection = document.getElementById('dashboard-section');
@@ -84,7 +120,7 @@ class CLIWebUI {
 
     bindEvents() {
         this.loginBtn.addEventListener('click', () => this.login());
-        this.logoutBtn.addEventListener('click', () => this.logout());
+        this.logoutBtn.addEventListener('click', () => this.confirmLogout());
         this.addEventBtn.addEventListener('click', () => this.showAddEventModal());
         this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
         this.addOrganizationBtn.addEventListener('click', () => this.showAddOrganizationModal());
@@ -101,6 +137,7 @@ class CLIWebUI {
         }
 
         try {
+            console.debug('Attempting login with:', { email });
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -112,18 +149,54 @@ class CLIWebUI {
             }
 
             const data = await response.json();
+            console.debug('Login response data:', data);
+            
             this.token = data.token;
+            this.userEmail = email;
+            
+            // Extract organizationId and role either from direct response or from token
+            if (data.organizationId) {
+                this.organizationId = data.organizationId;
+            } else {
+                // Try to extract from token
+                try {
+                    const payload = JSON.parse(atob(data.token.split('.')[1]));
+                    this.organizationId = payload.organizationId || null;
+                    console.debug('Extracted organizationId from token:', this.organizationId);
+                } catch (e) {
+                    console.debug('Failed to extract organizationId from token:', e);
+                    this.organizationId = null;
+                }
+            }
+            
+            // Get role from response or token
+            if (data.role) {
+                this.userRole = data.role;
+            } else {
+                // Try to extract from token
+                try {
+                    const payload = JSON.parse(atob(data.token.split('.')[1]));
+                    this.userRole = payload.role || null;
+                    console.debug('Extracted role from token:', this.userRole);
+                } catch (e) {
+                    console.debug('Failed to extract role from token:', e);
+                    this.userRole = null;
+                }
+            }
+
+            // Store user data in localStorage (only if values exist)
             localStorage.setItem('jwtToken', this.token);
-            // Decode the token to get organizationId
-            const payload = JSON.parse(atob(data.token.split('.')[1]));
-            this.organizationId = payload.organizationId;
-            this.userRole = payload.role;
-            localStorage.setItem('organizationId', this.organizationId);
-            localStorage.setItem('userRole', this.userRole);
+            if (this.organizationId) localStorage.setItem('organizationId', this.organizationId);
+            if (this.userRole) localStorage.setItem('userRole', this.userRole);
+            localStorage.setItem('userEmail', email);
+
+            // Update UI for logged in state
             this.loginSection.style.display = 'none';
             this.dashboardSection.style.display = 'grid';
-            this.logoutBtn.style.display = 'block';
-            this.addLog('success', '✅ Login successful');
+            this.userControls.style.display = 'block';
+            this.userEmailDisplay.textContent = email;
+            
+            this.addLog('success', '✅ Logged in successfully');
             this.loadDashboard();
             this.updateUIVisibility();
         } catch (error) {
@@ -194,11 +267,20 @@ class CLIWebUI {
 
     async loadPublicEventLinks() {
         try {
+            // Check if organizationId exists before making the request
+            if (!this.organizationId) {
+                console.debug('No organizationId available for public events');
+                this.renderPublicEventLinks([]);
+                return;
+            }
+            
+            console.debug('Loading public events with organizationId:', this.organizationId);
             const response = await this.authenticatedFetch(`/api/public/match-events?organizationId=${this.organizationId}`);
             if (!response.ok) throw new Error('Failed to load match events for public links');
             const events = await response.json();
             this.renderPublicEventLinks(events);
         } catch (error) {
+            console.debug('Error loading public events:', error);
             this.addLog('error', `❌ ${error.message}`);
         }
     }
@@ -544,17 +626,42 @@ class CLIWebUI {
         }
     }
 
+    confirmLogout() {
+        // Show confirmation modal before logout
+        this.showModal(
+            'Confirm Logout', 
+            'Are you sure you want to log out?',
+            () => this.logout()
+        );
+    }
+    
     logout() {
+        console.debug('Logging out user:', this.userEmail);
+        
+        // Clear user data
         this.token = null;
         this.organizationId = null;
         this.userRole = null;
+        this.userEmail = null;
+        
+        // Clear localStorage
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('organizationId');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
+        
+        // Update UI for logged out state
         this.loginSection.style.display = 'flex';
         this.dashboardSection.style.display = 'none';
-        this.logoutBtn.style.display = 'none';
-        this.addLog('info', '👋 Logged out');
+        this.userControls.style.display = 'none';
+        this.userEmailDisplay.textContent = '';
+        
+        this.addLog('info', '👋 Logged out successfully');
+        
+        // Close the modal if it's open
+        if (this.modal.open) {
+            this.modal.close();
+        }
     }
 
     addLog(type, message) {
