@@ -12,6 +12,7 @@ source .env
 REMOTE_USER="${REMOTE_HOST_USER:-ubuntu}"
 REMOTE_HOST="${REMOTE_HOST}"
 REMOTE_PORT="${REMOTE_HOST_PORT:-22}"
+
 REMOTE_PATH="${REMOTE_HOST_PATH:-~/docker/mufc-booking-v2}"
 LOCAL_PATH="$(pwd)"
 
@@ -108,8 +109,8 @@ function deploy_app {
     return 1
   fi
   
-  echo "🔧 Ensuring remote directory exists at ${REMOTE_HOST}:${REMOTE_PATH}..."
-  ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p ${REMOTE_PATH}"
+  echo "🔧 Ensuring remote directory exists at ${REMOTE_USER}:${REMOTE_HOST}:${REMOTE_PATH}..."
+  ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} "cd ${REMOTE_PATH} && pwd && mkdir -p ${REMOTE_PATH}"
   
   echo "📦 Syncing local files from ${LOCAL_PATH} to remote..."
   rsync -avz --progress -e "ssh -p $REMOTE_PORT" "$LOCAL_PATH/" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/
@@ -121,7 +122,7 @@ function deploy_app {
   echo "⏳ Waiting 5 seconds for containers to start..."
   sleep 5
   echo "📜 Tailing last 100 lines of logs from 'web' service..."
-  docker-compose logs --tail=100 web
+  docker-compose logs --tail=100
 EOF
   
   echo "✅ Deployment complete."

@@ -1,13 +1,16 @@
-version: '3.8'
-
 services:
-  web:
-    build: .
-    image: javimosch/mufc-booking-v2
+  app:
+    container_name: mufc-booking-v2
+    #build: .
+    #image: javimosch/mufc-booking-v2
+    image: node:20.17.0-alpine
+    working_dir: /app
     ports:
       - "5082:3000"
     volumes:
       - .:/app
     env_file:
       - .env
+    command: ["npm", "run", "web"]
+
       

@@ -706,4 +706,6 @@ class CLIWebUI {
     }
 }
 
-const ui = new CLIWebUI();
+// Initialize the UI instance
+window.ui = new CLIWebUI();
+console.debug('CLIWebUI initialized successfully');

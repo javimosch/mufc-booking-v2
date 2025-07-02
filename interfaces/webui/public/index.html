@@ -153,12 +153,12 @@
         </dialog>
     </div>
 
+    <script src="app.js"></script>
     <script>
-        let ui;
         document.addEventListener('DOMContentLoaded', () => {
-            ui = new CLIWebUI();
+            // CLIWebUI is now defined from app.js
+            console.debug('Initializing UI from index.html');
         });
     </script>
-    <script src="app.js"></script>
 </body>
 </html>
