@@ -1,0 +1,15 @@
+http:
+  routers:
+    mufc-booking-v2:
+      entryPoints:
+        - https
+      service: mufc-booking-v2
+      rule: Host(`mufc-booking-v2.coolify.intrane.fr`)
+      tls:
+        certresolver: letsencrypt
+  services:
+    mufc-booking-v2:
+      loadBalancer:
+        servers:
+          -
+            url: 'http://100.86.93.41:5081'
