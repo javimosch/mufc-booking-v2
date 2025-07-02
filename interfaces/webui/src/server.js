@@ -478,6 +478,31 @@ app.put('/api/users/:id/role', authMiddleware(['superAdmin']), async (req, res) 
     }
 });
 
+// Get all organizations
+app.get('/api/organizations', authMiddleware(['superAdmin', 'orgAdmin']), async (req, res) => {
+    try {
+        console.debug('Getting organizations for user role:', req.user.role);
+        
+        let organizations;
+        
+        if (req.user.role === 'superAdmin') {
+            // Super admins can see all organizations
+            organizations = await Organization.find();
+        } else if (req.user.role === 'orgAdmin') {
+            // Org admins can only see their own organization
+            organizations = await Organization.find({ _id: req.user.organizationId });
+        } else {
+            return res.status(403).json({ error: 'Unauthorized role' });
+        }
+        
+        console.debug(`Found ${organizations.length} organizations`);
+        res.json(organizations);
+    } catch (error) {
+        console.error('Get organizations error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Create organization
 app.post('/api/organizations', authMiddleware(['superAdmin']), async (req, res) => {
     try {
