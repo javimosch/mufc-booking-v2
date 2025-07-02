@@ -32,7 +32,7 @@ To refactor the application's user role system to provide clear separation of co
     - Existing users will need to be migrated. `orgAdmin`s will be identified by their existing access permissions.
 
 2.  **Enhance JWT Payload**:
-    - The `/api/login` endpoint must include the user's `role` in the JWT payload. This will allow the frontend to make role-based decisions without extra API calls.
+    - The `/api/auth/login` endpoint must include the user's `role` in the JWT payload. This will allow the frontend to make role-based decisions without extra API calls.
 
 3.  **Implement Role-Based Authorization Middleware**:
     - Create a middleware function that checks the `role` from the JWT payload.

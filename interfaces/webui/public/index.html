@@ -51,104 +51,251 @@
     </style>
 </head>
 <body class="min-h-screen overflow-x-hidden">
-    <div class="app-container max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
-        <!-- Header -->
-        <header class="hero bg-base-200 bg-opacity-90 backdrop-blur-sm rounded-box shadow-lg mb-8">
-            <div class="hero-content flex flex-col md:flex-row justify-between w-full">
-                <div>
-                    <h1 class="text-5xl font-bold">⚽ MUFC Booking v2</h1>
-                    <p class="py-2">WebUI for Organization Admins</p>
+    <!-- Login Section (Full Screen) -->
+    <div id="login-section" class="min-h-screen flex items-center justify-center p-4">
+        <div class="card glass-card shadow-xl max-w-md w-full animate-fadeInUp">
+            <div class="card-body">
+                <h2 class="card-title text-2xl">🔒 Login</h2>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">📧 Email</span>
+                    </label>
+                    <input type="email" id="email-input" placeholder="Enter your email..." class="input input-bordered w-full">
                 </div>
-                <div class="user-controls" id="user-controls" style="display: none;">
-                    <div class="flex items-center gap-3">
-                        <span id="user-email-display" class="text-sm font-medium"></span>
-                        <button id="logout-btn" class="btn btn-error btn-outline gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Logout
-                        </button>
-                    </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">🔑 Password</span>
+                    </label>
+                    <input type="password" id="password-input" placeholder="Enter your password..." class="input input-bordered w-full">
+                </div>
+                <div class="card-actions justify-end mt-4">
+                    <button id="login-btn" class="btn btn-primary">Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Layout with Sidebar (Hidden until login) -->
+    <div id="dashboard-section" class="hidden h-screen flex flex-col">
+        <!-- Top Header -->
+        <header class="bg-base-200 bg-opacity-90 backdrop-blur-sm shadow-lg p-4">
+            <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <!-- Mobile menu button -->
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <span class="text-xl font-bold">MUFC Booking</span>
+                </div>
+                <div id="user-controls" class="flex items-center gap-4" style="display: none;">
+                    <span id="user-email-display" class="hidden sm:inline-block"></span>
+                    <button id="logout-btn" class="btn btn-sm btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div id="login-section" class="card glass-card shadow-xl max-w-md mx-auto animate-fadeInUp">
-                <div class="card-body">
-                    <h2 class="card-title text-2xl">🔒 Login</h2>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">📧 Email</span>
-                        </label>
-                        <input type="email" id="email-input" placeholder="Enter your email..." class="input input-bordered w-full">
-                    </div>
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">🔑 Password</span>
-                        </label>
-                        <input type="password" id="password-input" placeholder="Enter your password..." class="input input-bordered w-full">
-                    </div>
-                    <div class="card-actions justify-end mt-4">
-                        <button id="login-btn" class="btn btn-primary">Login</button>
+        <!-- Main Content Area with Sidebar -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar (Left Navigation) -->
+            <aside id="sidebar" class="w-64 bg-base-200 shadow-lg hidden md:block transition-all duration-300 ease-in-out">
+                <nav class="p-4 space-y-2">
+                    <!-- Navigation Links -->
+                    <div class="text-sm opacity-70 mb-2 px-3 uppercase font-semibold">Main Menu</div>
+                    
+                    <!-- Dashboard Link (All users) -->
+                    <a href="#" id="nav-dashboard" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-base-300 active-nav">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <!-- Events Link (OrgAdmin) -->
+                    <a href="#" id="nav-events" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-base-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Match Events</span>
+                    </a>
+                    
+                    <!-- Users Link (Admin) -->
+                    <a href="#" id="nav-users" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-base-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Users</span>
+                    </a>
+                    
+                    <!-- Organizations Link (SuperAdmin) -->
+                    <a href="#" id="nav-organizations" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-base-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Organizations</span>
+                    </a>
+                    
+                    <!-- Public Links -->
+                    <a href="#" id="nav-public-links" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-base-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <span>Public Links</span>
+                    </a>
+                </nav>
+                
+                <!-- Activity Log in Sidebar -->
+                <div class="p-4 mt-4">
+                    <h3 class="text-sm opacity-70 uppercase font-semibold mb-2">Activity Log</h3>
+                    <div id="log-container" class="log-container h-48 overflow-y-auto bg-base-300 rounded-lg p-3 font-mono text-xs"></div>
+                </div>
+            </aside>
+            
+            <!-- Mobile Sidebar Overlay -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden" style="display: none;"></div>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6">
+                <!-- Login Section (Full Screen) -->
+                <div id="login-section" class="card glass-card shadow-xl max-w-md mx-auto animate-fadeInUp">
+                    <div class="card-body">
+                        <h2 class="card-title text-2xl">🔒 Login</h2>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">📧 Email</span>
+                            </label>
+                            <input type="email" id="email-input" placeholder="Enter your email..." class="input input-bordered w-full">
+                        </div>
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">🔑 Password</span>
+                            </label>
+                            <input type="password" id="password-input" placeholder="Enter your password..." class="input input-bordered w-full">
+                        </div>
+                        <div class="card-actions justify-end mt-4">
+                            <button id="login-btn" class="btn btn-primary">Login</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div id="dashboard-section" class="lg:grid lg:grid-cols-3 lg:gap-8" style="display: none;">
-                <!-- Main Content Area -->
-                <div class="lg:col-span-2 space-y-6">
-                    <section class"card glass-card shadow-xl animate-fadeInUp">
-                    <div class="card-body">
-                        <h2 class="card-title">📅 Manage Match Events</h2>
-                        <div id="match-events-content" class="mt-4 space-y-4"></div>
-                        <div class="card-actions justify-end mt-4">
-                            <button id="add-event-btn" class="btn btn-primary">Add Event</button>
+                
+                <!-- Content Views (Only one is visible at a time) -->
+                
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="view-content animate-fadeInUp">
+                    <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Dashboard Summary Cards -->
+                        <div class="card glass-card shadow-lg">
+                            <div class="card-body">
+                                <h3 class="card-title">Quick Stats</h3>
+                                <div class="stats shadow mt-4">
+                                    <div class="stat">
+                                        <div class="stat-title">Total Events</div>
+                                        <div class="stat-value" id="stats-events">0</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-title">Users</div>
+                                        <div class="stat-value" id="stats-users">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Activity -->
+                        <div class="card glass-card shadow-lg">
+                            <div class="card-body">
+                                <h3 class="card-title">Recent Activity</h3>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="table table-zebra w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>Action</th>
+                                                <th>Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recent-activity-table">
+                                            <!-- Filled dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </section>
-
-                <!-- Users Panel -->
-                <section class="card glass-card shadow-xl animate-fadeInUp" style="animation-delay: 0.1s;">
-                    <div class="card-body">
-                        <h2 class="card-title">👥 Manage Users</h2>
-                        <div id="users-content" class="mt-4 space-y-4"></div>
-                        <div class="card-actions justify-end mt-4">
-                             <button id="add-user-btn" class="btn btn-primary">Add User</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Organizations Panel -->
-                <section class="card glass-card shadow-xl animate-fadeInUp" style="animation-delay: 0.2s;">
-                    <div class="card-body">
-                        <h2 class="card-title">🏢 Manage Organizations</h2>
-                        <div id="organizations-content" class="mt-4 space-y-4"></div>
-                        <div class="card-actions justify-end mt-4">
-                            <button id="add-organization-btn" class="btn btn-primary">Add Organization</button>
-                        </div>
-                    </div>
-                </section>
                 </div>
-
-                <!-- Sidebar -->
-                <aside class="lg:col-span-1 space-y-6 mt-6 lg:mt-0">
-                    <section class="card glass-card shadow-xl animate-fadeInUp" style="animation-delay: 0.3s;">
+                
+                <!-- Match Events View -->
+                <div id="view-events" class="view-content hidden animate-fadeInUp">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">📅 Match Events</h2>
+                        <button id="add-event-btn" class="btn btn-primary btn-sm gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Event
+                        </button>
+                    </div>
+                    
+                    <div class="card glass-card shadow-lg">
                         <div class="card-body">
-                            <h2 class="card-title">🔗 Public Event Links</h2>
-                            <div id="public-event-links-content" class="mt-4 space-y-4"></div>
-                        </div>
-                    </section>
-                    <div class="card glass-card shadow-xl">
-                        <div class="card-body">
-                            <h3 class="card-title">📝 Activity Log</h3>
-                            <div id="log-container" class="log-container mt-4 h-64 overflow-y-auto bg-base-200 rounded-box p-4 font-mono text-sm"></div>
+                            <div id="match-events-content" class="space-y-4"></div>
                         </div>
                     </div>
-                </aside>
-            </div>
-        </main>
+                </div>
+                
+                <!-- Users View -->
+                <div id="view-users" class="view-content hidden animate-fadeInUp">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">👥 Users</h2>
+                        <button id="add-user-btn" class="btn btn-primary btn-sm gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add User
+                        </button>
+                    </div>
+                    
+                    <div class="card glass-card shadow-lg">
+                        <div class="card-body">
+                            <div id="users-content" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Organizations View -->
+                <div id="view-organizations" class="view-content hidden animate-fadeInUp">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">🏢 Organizations</h2>
+                        <button id="add-organization-btn" class="btn btn-primary btn-sm gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Organization
+                        </button>
+                    </div>
+                    
+                    <div class="card glass-card shadow-lg">
+                        <div class="card-body">
+                            <div id="organizations-content" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Public Links View -->
+                <div id="view-public-links" class="view-content hidden animate-fadeInUp">
+                    <h2 class="text-2xl font-bold mb-6">🔗 Public Event Links</h2>
+                    
+                    <div class="card glass-card shadow-lg">
+                        <div class="card-body">
+                            <div id="public-event-links-content" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
 
         <!-- Modal -->
         <dialog id="modal" class="modal">
@@ -168,6 +315,51 @@
         document.addEventListener('DOMContentLoaded', () => {
             // CLIWebUI is now defined from app.js
             console.debug('Initializing UI from index.html');
+            
+            // Initialize sidebar navigation
+            const navLinks = document.querySelectorAll('.nav-link');
+            const viewContents = document.querySelectorAll('.view-content');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            // Handle navigation clicks
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    navLinks.forEach(l => l.classList.remove('active-nav', 'bg-base-300'));
+                    
+                    // Add active class to clicked link
+                    link.classList.add('active-nav', 'bg-base-300');
+                    
+                    // Hide all views
+                    viewContents.forEach(view => view.classList.add('hidden'));
+                    
+                    // Show the corresponding view
+                    const viewId = link.id.replace('nav-', 'view-');
+                    document.getElementById(viewId)?.classList.remove('hidden');
+                    
+                    // Close mobile sidebar if open
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.add('hidden');
+                        sidebarOverlay.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Mobile menu toggle
+            mobileMenuBtn?.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+                sidebarOverlay.style.display = sidebar.classList.contains('hidden') ? 'none' : 'block';
+            });
+            
+            // Close sidebar when clicking overlay
+            sidebarOverlay?.addEventListener('click', () => {
+                sidebar.classList.add('hidden');
+                sidebarOverlay.style.display = 'none';
+            });
         });
     </script>
 </body>

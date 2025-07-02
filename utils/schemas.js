@@ -54,16 +54,19 @@ const passedMatchEventSchema = new mongoose.Schema({
   organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
 }, { timestamps: true });
 
+
 const Organization = mongoose.model('Organization', organizationSchema);
 const WebUIUser = mongoose.model('WebUIUser', webUIUserSchema);
 const User = mongoose.model('User', userSchema);
 const MatchEvent = mongoose.model('MatchEvent', matchEventSchema);
 const PassedMatchEvent = mongoose.model('PassedMatchEvent', passedMatchEventSchema);
 
-module.exports = {
+
+
+module.exports = global.mongoose = {
   Organization,
   WebUIUser,
-
+  User,
   MatchEvent,
   PassedMatchEvent,
 };

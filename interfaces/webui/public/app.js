@@ -119,12 +119,61 @@ class CLIWebUI {
     }
 
     bindEvents() {
+        // Bind login button
         this.loginBtn.addEventListener('click', () => this.login());
         this.logoutBtn.addEventListener('click', () => this.confirmLogout());
+        
+        // Add Enter key handling for login form
+        this.passwordInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') this.login();
+        });
+        
+        // Bind sidebar navigation events
+        this.bindNavigationEvents();
+        
         this.addEventBtn.addEventListener('click', () => this.showAddEventModal());
         this.addUserBtn.addEventListener('click', () => this.showAddUserModal());
         this.addOrganizationBtn.addEventListener('click', () => this.showAddOrganizationModal());
         this.modalCancel.addEventListener('click', () => this.modal.close());
+    }
+    
+    bindNavigationEvents() {
+        // Get navigation links
+        const navLinks = document.querySelectorAll('.nav-link');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        // Handle navigation clicks
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Extract view name from link id (nav-dashboard -> dashboard)
+                const viewName = link.id.replace('nav-', '');
+                this.activateView(viewName);
+                
+                // Close mobile sidebar if open
+                if (window.innerWidth < 768 && sidebar && sidebarOverlay) {
+                    sidebar.classList.add('hidden');
+                    sidebarOverlay.style.display = 'none';
+                }
+            });
+        });
+        
+        // Mobile menu toggle
+        if (mobileMenuBtn && sidebar && sidebarOverlay) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+                sidebarOverlay.style.display = sidebar.classList.contains('hidden') ? 'none' : 'block';
+            });
+            
+            // Close sidebar when clicking overlay
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('hidden');
+                sidebarOverlay.style.display = 'none';
+            });
+        }
     }
 
     async login() {
@@ -138,7 +187,7 @@ class CLIWebUI {
 
         try {
             console.debug('Attempting login with:', { email });
-            const response = await fetch('/api/login', {
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -225,46 +274,142 @@ class CLIWebUI {
     }
 
     async loadDashboard() {
-        this.loadMatchEvents();
-        this.loadUsers();
-        this.loadPublicEventLinks();
-        this.loadOrganizations();
-    }
-
-    updateUIVisibility() {
-        // Safely get elements and check if they exist
-        const orgContent = document.getElementById('organizations-content');
-        const eventContent = document.getElementById('match-events-content');
-        const usersContent = document.getElementById('users-content');
+        console.debug('Loading dashboard with role:', this.userRole);
         
-        // Safely get panels, checking if the content elements exist first
-        const orgManagementPanel = orgContent ? orgContent.closest('.card') : null;
-        const eventManagementPanel = eventContent ? eventContent.closest('.card') : null;
-        const usersPanel = usersContent ? usersContent.closest('.card') : null;
-
-        // Add debug logs
-        console.debug('UI elements found:', {
-            orgManagementPanel, 
-            eventManagementPanel, 
-            usersPanel,
-            userRole: this.userRole
-        });
-
-        // Default visibility - only set if elements exist
-        if (orgManagementPanel) orgManagementPanel.style.display = 'none';
-        if (eventManagementPanel) eventManagementPanel.style.display = 'none';
-        if (usersPanel) usersPanel.style.display = 'block'; // Users panel is visible to admins
-
+        // Load data for all sections regardless of current view
+        this.loadPublicEventLinks();
+        
+        // Role-based content loading
         if (this.userRole === 'superAdmin') {
-            if (orgManagementPanel) orgManagementPanel.style.display = 'block';
+            this.loadOrganizations();
+            this.loadMatchEvents();
+            this.loadUsers();
+            
+            // Update stats counters on dashboard
+            this.updateDashboardStats();
         } else if (this.userRole === 'orgAdmin') {
-            if (eventManagementPanel) eventManagementPanel.style.display = 'block';
-        } else {
-            // Hide all admin panels for regular users
-            if (this.dashboardSection) this.dashboardSection.style.display = 'none';
+            this.loadMatchEvents();
+            this.loadUsers();
+            
+            // Update stats counters on dashboard
+            this.updateDashboardStats();
+        }
+        
+        // Add a welcome message to the log
+        this.addLog('info', `Welcome back, ${this.userEmail || 'User'}! Role: ${this.userRole || 'unknown'}`);
+    }
+    
+    // Update dashboard stats
+    updateDashboardStats() {
+        const eventsCounter = document.getElementById('stats-events');
+        const usersCounter = document.getElementById('stats-users');
+        
+        // Simple example - in a real app, you'd want to get actual counts from the server
+        if (eventsCounter) {
+            this.authenticatedFetch('/api/match-events/count')
+                .then(response => response.json())
+                .then(data => {
+                    eventsCounter.textContent = data.count || '0';
+                })
+                .catch(err => {
+                    console.debug('Error fetching event stats:', err);
+                    eventsCounter.textContent = '0';
+                });
+        }
+        
+        if (usersCounter) {
+            this.authenticatedFetch('/api/users/count')
+                .then(response => response.json())
+                .then(data => {
+                    usersCounter.textContent = data.count || '0';
+                })
+                .catch(err => {
+                    console.debug('Error fetching user stats:', err);
+                    usersCounter.textContent = '0';
+                });
         }
     }
 
+    updateUIVisibility() {
+        console.debug('Updating UI visibility with role:', this.userRole);
+        
+        // Get sidebar navigation links
+        const navDashboard = document.getElementById('nav-dashboard');
+        const navEvents = document.getElementById('nav-events');
+        const navUsers = document.getElementById('nav-users');
+        const navOrganizations = document.getElementById('nav-organizations');
+        const navPublicLinks = document.getElementById('nav-public-links');
+        
+        // Hide all navigation items by default
+        [navDashboard, navEvents, navUsers, navOrganizations, navPublicLinks].forEach(nav => {
+            if (nav) nav.classList.add('hidden');
+        });
+        
+        // Show dashboard section and hide login section when logged in
+        if (this.token) {
+            if (this.loginSection) this.loginSection.style.display = 'none';
+            if (this.dashboardSection) this.dashboardSection.style.display = 'flex';
+            
+            // Show sidebar
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('hidden');
+            
+            // Always show dashboard for logged in users
+            if (navDashboard) navDashboard.classList.remove('hidden');
+            
+            // Role-based navigation visibility
+            if (this.userRole === 'superAdmin') {
+                // SuperAdmin sees everything
+                [navEvents, navUsers, navOrganizations, navPublicLinks].forEach(nav => {
+                    if (nav) nav.classList.remove('hidden');
+                });
+            } else if (this.userRole === 'orgAdmin') {
+                // OrgAdmin sees events, users and public links
+                [navEvents, navUsers, navPublicLinks].forEach(nav => {
+                    if (nav) nav.classList.remove('hidden');
+                });
+            } else {
+                // Regular users only see public links
+                if (navPublicLinks) navPublicLinks.classList.remove('hidden');
+            }
+            
+            // Activate dashboard view by default
+            this.activateView('dashboard');
+        } else {
+            // Not logged in - show login section and hide dashboard
+            if (this.loginSection) this.loginSection.style.display = 'block';
+            if (this.dashboardSection) this.dashboardSection.style.display = 'none';
+            
+            // Hide sidebar when not logged in
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.add('hidden');
+        }
+    }
+    
+    // Helper method to activate a specific view
+    activateView(viewName) {
+        console.debug('Activating view:', viewName);
+        
+        // Hide all views
+        const views = document.querySelectorAll('.view-content');
+        views.forEach(view => view.classList.add('hidden'));
+        
+        // Show the requested view
+        const targetView = document.getElementById(`view-${viewName}`);
+        if (targetView) {
+            targetView.classList.remove('hidden');
+        } else {
+            console.debug(`View not found: view-${viewName}`);
+        }
+        
+        // Update active state in navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => link.classList.remove('active-nav', 'bg-base-300'));
+        
+        const activeLink = document.getElementById(`nav-${viewName}`);
+        if (activeLink) activeLink.classList.add('active-nav', 'bg-base-300');
+    }
+    
     async loadPublicEventLinks() {
         try {
             // Check if organizationId exists before making the request

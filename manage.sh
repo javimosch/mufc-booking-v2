@@ -27,6 +27,21 @@ if [ -z "${APP_NAME}" ]; then
   fi
 fi
 
+
+if [ -z "${REMOTE_DOMAIN_CONFIG_FILENAME}" ]; then
+  if [ -f ".env" ]; then
+    if ! grep -q "REMOTE_DOMAIN_CONFIG_FILENAME=" .env; then
+      echo "Enter the remote domain config filename (default: ${APP_NAME// /-}.yml):"
+      read -r REMOTE_DOMAIN_CONFIG_FILENAME
+      if [ -z "${REMOTE_DOMAIN_CONFIG_FILENAME}" ]; then
+        REMOTE_DOMAIN_CONFIG_FILENAME="${APP_NAME// /-}.yml"
+      fi
+      echo "REMOTE_DOMAIN_CONFIG_FILENAME=$REMOTE_DOMAIN_CONFIG_FILENAME" >> .env
+      echo "REMOTE_DOMAIN_CONFIG_FILENAME set to $REMOTE_DOMAIN_CONFIG_FILENAME"
+    fi
+  fi
+fi
+
 # Domain deployment variables
 DOMAIN_REMOTE_USER="root"
 DOMAIN_REMOTE_HOST="${REMOTE_DOMAIN_HOST}"
@@ -180,6 +195,10 @@ function deploy_domain {
     echo "Waiting for API to be accessible... ($N times)"
     
     if curl "https://${PUBLISHED_DOMAIN}/health" | grep -q "ok"; then
+      echo "✅ API is now accessible at: https://${PUBLISHED_DOMAIN}"
+      break
+    fi
+    if curl -s -o /dev/null -w "%{http_code}" "https://${PUBLISHED_DOMAIN}" | grep -q "20"; then
       echo "✅ API is now accessible at: https://${PUBLISHED_DOMAIN}"
       break
     fi
