@@ -4,6 +4,7 @@ require('dotenv').config({
 
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const databaseManager = require('../../../utils/database');
 const publicRoutes = require('./routes/public-routes');
@@ -85,6 +86,19 @@ app.get('/api/health', async (req, res) => {
 
 // Serve the iframe page
 app.get('/iframe', (req, res) => {
+    const templateName = req.query.templateName;
+    console.debug('Iframe request with templateName:', templateName);
+    
+    if (templateName) {
+        const templatePath = path.join(__dirname, `../public/iframe_templates/${templateName}.html`);
+        // Check if the template exists
+        if (fs.existsSync(templatePath)) {
+            return res.sendFile(templatePath);
+        }
+        console.debug(`Template ${templateName} not found, falling back to default`);
+    }
+    
+    // Default template
     res.sendFile(path.join(__dirname, '../public/iframe.html'));
 });
 

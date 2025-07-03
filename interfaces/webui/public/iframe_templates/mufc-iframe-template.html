@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation - Montpellier United</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="stadium" patternUnits="userSpaceOnUse" width="20" height="20"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23stadium)"/></svg>');
+            z-index: -1;
+        }
+
+        /* Preserve the original iframe-body class for embed-ui.js */
+        .iframe-body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: transparent;
+            font-size: 1rem;
+        }
+
+        /* Preserve app-container class for embed-ui.js */
+        .app-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            min-height: fit-content;
+            padding: 1vw;
+        }
+
+        /* Preserve main-content class for embed-ui.js */
+        .main-content {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 193, 7, 0.1) 50%, transparent 70%);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Preserve card class for embed-ui.js but with new styling */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            padding: 0;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        /* Language selector styling */
+        .language-selector-group {
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        #language-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #language-select option {
+            background: #1a365d;
+            color: white;
+        }
+
+        .form-content {
+            padding: 40px;
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #ffc107;
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 193, 7, 0.1) 0%, transparent 70%);
+        }
+
+        .event-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .calendar-icon {
+            width: 40px;
+            height: 40px;
+            background: #ffc107;
+            color: #1a365d;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .event-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Preserve event-details id for embed-ui.js but with new styling */
+        #event-details {
+            position: relative;
+            z-index: 1;
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 0;
+            font-size: 1rem;
+            color: white;
+        }
+
+        #event-details h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #ffc107;
+        }
+
+        #event-details p {
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        /* Preserve form-group class for embed-ui.js but with new styling */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        /* Preserve label class for embed-ui.js but with new styling */
+        .label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a365d;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Preserve input class for embed-ui.js but with new styling */
+        .input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .input:focus, select:focus {
+            outline: none;
+            border-color: #2c5282;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
+        }
+
+        /* Preserve btn classes for embed-ui.js but with new styling */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn--primary {
+            background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(44, 82, 130, 0.3);
+            border-color: #ffc107;
+        }
+
+        .btn--danger {
+            background: white;
+            color: #1a365d;
+            border: 2px solid #2c5282;
+        }
+
+        .btn--danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(44, 82, 130, 0.2);
+            background: #f8fafc;
+        }
+
+        /* Preserve joined-users-section class for embed-ui.js but with new styling */
+        .joined-users-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 1px solid #cbd5e0;
+        }
+
+        .joined-users-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1a365d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* Preserve joined-users-list id for embed-ui.js but with new styling */
+        #joined-users-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        /* Preserve participant-count id for embed-ui.js but with new styling */
+        #participant-count-inner {
+            background: linear-gradient(135deg, #ffc107 0%, #f59e0b 100%);
+            color: #1a365d;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .participant-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(44, 82, 130, 0.1);
+            border-left: 4px solid #ffc107;
+        }
+
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 15px;
+            border: 2px solid #ffc107;
+        }
+
+        .participant-name {
+            font-weight: 500;
+            color: #1a365d;
+        }
+        
+        .participant-count {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #1a365d;
+            font-style: italic;
+            text-align: right;
+        }
+        
+        #participant-count-inner {
+            font-weight: 600;
+        }
+
+        .club-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ffc107 0%, #f59e0b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a365d;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+            z-index: 2;
+        }
+
+        /* Preserve heading--section class for embed-ui.js but with new styling */
+        .heading--section {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Preserve multi-event-mode and events-list ids for embed-ui.js */
+        #events-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .form-content {
+                padding: 25px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                margin-bottom: 10px;
+            }
+
+            .club-badge {
+                width: 50px;
+                height: 50px;
+                top: 15px;
+                right: 15px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="iframe-body">
+    <div class="app-container">
+        <main class="main-content">
+            <div id="embed-section" class="card fade-in">
+                <div id="single-event-mode">
+                    <div class="header">
+                        <div class="club-badge">MU</div>
+                        <h1>Réservation d'Événement</h1>
+                        <div class="form-group language-selector-group">
+                            <select id="language-select" class="input">
+                                <option value="fr">Français</option>
+                                <option value="en">English</option>
+                                <option value="es">Español</option>
+                                <option value="pr">Português</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-content">
+                        <div class="event-card">
+                            <div class="event-header">
+                                <div class="calendar-icon">📅</div>
+                                <div class="event-title">Match Event</div>
+                            </div>
+                            <div id="event-details"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="label" for="nickname-input">Nickname</label>
+                            <input type="text" id="nickname-input" class="input" placeholder="Enter your nickname...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="label" for="embed-email-input">Email</label>
+                            <input type="email" id="embed-email-input" class="input" placeholder="Enter your email...">
+                        </div>
+
+                        <div class="button-group">
+                            <button id="join-btn" class="btn btn--primary">Join</button>
+                            <button id="unjoin-btn" class="btn btn--danger">Un-join</button>
+                        </div>
+
+                        <div class="joined-users-section">
+                         
+                            <div id="joined-users-list"></div>
+                            <!-- Add a separate div for total participants that will be visible even if styled differently -->
+                            <div id="participant-count">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="multi-event-mode" style="display: none;">
+                    <div class="header">
+                        <div class="club-badge">MU</div>
+                        <h1>Match Events</h1>
+                    </div>
+                    <div class="form-content">
+                        <div class="form-group">
+                            <input type="text" id="search-input" class="input" placeholder="Search events...">
+                        </div>
+                        <div id="events-list"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="embed-ui.js"></script>
+</body>
+</html>
