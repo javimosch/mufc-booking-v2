@@ -128,7 +128,7 @@ function deploy_app {
   ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} "cd ${REMOTE_PATH} && pwd && mkdir -p ${REMOTE_PATH}"
   
   echo "📦 Syncing local files from ${LOCAL_PATH} to remote..."
-  rsync -avz --progress -e "ssh -p $REMOTE_PORT" "$LOCAL_PATH/" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/
+  rsync -avz --exclude='.git' --progress -e "ssh -p $REMOTE_PORT" "$LOCAL_PATH/" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/
   
   echo "🐳 Running docker-compose up on remote host..."
   ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} << EOF

@@ -60,10 +60,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* background: 
-                radial-gradient(circle at 20% 20%, rgba(255, 193, 7, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 30%, rgba(44, 82, 130, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(255, 193, 7, 0.03) 0%, transparent 50%); */
             z-index: -1;
         }
 
@@ -255,6 +251,9 @@
             color: #1a365d;
             cursor: pointer;
             transition: all 0.3s ease;
+            /* Enhanced touch target for mobile */
+            min-width: 44px;
+            min-height: 44px;
         }
 
         .player-dot:hover {
@@ -297,6 +296,12 @@
             color: #ffc107;
             margin-bottom: 15px;
             font-size: 24px;
+        }
+
+        #event-details h3 {
+            color: #ffc107;
+            margin-bottom: 15px;
+            font-size: 20px;
         }
 
         .detail-row {
@@ -348,6 +353,8 @@
             font-size: 16px;
             background: white;
             transition: all 0.3s ease;
+            /* Enhanced touch target for mobile */
+            min-height: 44px;
         }
 
         .input:focus, select:focus {
@@ -406,6 +413,8 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            /* Enhanced touch target for mobile */
+            min-height: 44px;
         }
 
         .btn::before {
@@ -580,26 +589,217 @@
             cursor: pointer;
         }
 
-        @media (max-width: 768px) {
+        /* Mobile-first responsive design */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .app-container {
+                padding: 0.5vw;
+            }
+
+            .call-up-sheet {
+                transform: none;
+                animation: none;
+                border-radius: 15px;
+                padding: 2px;
+            }
+
+            .header-section {
+                padding: 15px;
+                clip-path: none;
+            }
+
+            .club-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .club-badge {
+                font-size: 12px;
+                padding: 8px 16px;
+            }
+
+            .language-selector-group {
+                position: static;
+                margin-top: 10px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .main-content::before {
+                display: none;
+            }
+
             .tactical-section {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
 
+            .formation-display {
+                order: 2;
+                padding: 15px;
+            }
+
+            #event-details {
+                order: 1;
+                padding: 20px;
+                font-size: 14px;
+            }
+
+            #event-details h2,
+            #event-details h3 {
+                font-size: 18px;
+            }
+
+            .football-pitch {
+                min-height: 150px;
+                padding: 10px;
+            }
+
+            .player-dot {
+                width: 30px;
+                height: 30px;
+                font-size: 8px;
+            }
+
             .form-row {
                 grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .player-registration {
+                padding: 20px;
+                margin: 20px 0;
+            }
+
+            .player-registration::before {
+                font-size: 10px;
+                padding: 3px 10px;
             }
 
             .squad-actions {
                 flex-direction: column;
+                gap: 12px;
+            }
+
+            .btn {
+                padding: 16px;
+                font-size: 14px;
+            }
+
+            .joined-users-section {
+                padding: 20px;
+            }
+
+            .roster-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .roster-title {
+                font-size: 16px;
+            }
+
+            #participant-count {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) and (min-width: 481px) {
+            .tactical-section {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .squad-actions {
+                flex-direction: column;
+                gap: 12px;
             }
 
             .call-up-sheet {
                 transform: none;
+                animation: none;
             }
 
             .main-content::before {
                 display: none;
+            }
+
+            .header-section {
+                clip-path: none;
+            }
+
+            .language-selector-group {
+                position: static;
+                margin-top: 15px;
+            }
+
+            .club-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+
+        /* Tablet landscape and small desktop */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .tactical-section {
+                gap: 30px;
+            }
+
+            .main-content {
+                padding: 35px;
+            }
+
+            .call-up-sheet {
+                transform: rotateX(2deg) rotateY(-1deg);
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .btn:hover {
+                transform: none;
+            }
+
+            .btn:active {
+                transform: scale(0.98);
+            }
+
+            .player-dot:hover {
+                transform: none;
+            }
+
+            .player-dot:active {
+                transform: scale(1.1);
+            }
+
+            /* Increase touch targets */
+            .input, select, .btn {
+                min-height: 48px;
+            }
+
+            .player-dot {
+                min-width: 48px;
+                min-height: 48px;
+            }
+        }
+
+        /* High DPI displays */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .input, .btn {
+                border-width: 1px;
             }
         }
     </style>
