@@ -28,12 +28,12 @@ function canManageOrgs(vm) {
         }</span>
                     </div>
                     <div class="list-item-actions button-group">
-                        <button class="btn btn--secondary" onclick="ui.showEditOrganizationModal('${
+                        <button class="btn btn--secondary" onclick="ui.canManageOrgs.showEditOrganizationModal('${
                           org._id
                         }', '${org.name}', '${
           org.description || ""
         }')">Edit</button>
-                        <button class="btn btn--danger" onclick="ui.showDeleteOrganizationModal('${
+                        <button class="btn btn--danger" onclick="ui.canManageOrgs.showDeleteOrganizationModal('${
                           org._id
                         }', '${org.name}')">Delete</button>
                     </div>

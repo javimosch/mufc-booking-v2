@@ -6,6 +6,7 @@ const authMiddleware = require('../middlewares/auth-middleware');
 // Get all organizations
 router.get('/', authMiddleware(['superAdmin', 'orgAdmin']), async (req, res) => {
     try {
+        const Organization = global.mongoose.Organization;
         console.debug('Getting organizations for user role:', req.user.role);
         
         let organizations;
@@ -28,6 +29,7 @@ router.get('/', authMiddleware(['superAdmin', 'orgAdmin']), async (req, res) => 
 // Create organization
 router.post('/', authMiddleware(['superAdmin']), async (req, res) => {
 try {
+    const Organization = global.mongoose.Organization;
     const { name, description } = req.body;
     const newOrganization = new Organization({
         name,
@@ -56,6 +58,7 @@ try {
 // Update organization
 router.put('/:id', authMiddleware(['superAdmin']), async (req, res) => {
     try {
+        const Organization = global.mongoose.Organization;
         const { id } = req.params;
         const { name, description } = req.body;
 
@@ -78,6 +81,9 @@ router.put('/:id', authMiddleware(['superAdmin']), async (req, res) => {
 // Delete organization
 router.delete('/:id', authMiddleware(['superAdmin']), async (req, res) => {
     try {
+        const Organization = global.mongoose.Organization;
+        const WebUIUser = global.mongoose.WebUIUser;
+        const MatchEvent = global.mongoose.MatchEvent;
         const { id } = req.params;
 
         const organization = await Organization.findById(id);
