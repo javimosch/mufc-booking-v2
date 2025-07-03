@@ -29,7 +29,7 @@ function canManageEvents(vm){
                 vm.canLog.addLog('error', `❌ ${error.message}`);
             }
         },
-        renderMatchEvents(events) {
+        renderMatchEvents(events, usersMap = new Map()) {
             if (events.length === 0) {
                 scope.matchEventsContent.innerHTML = '<p>No match events found.</p>';
                 return;
@@ -44,11 +44,48 @@ function canManageEvents(vm){
                         const buttonText = iteration.isCancelled ? 'Uncancel' : 'Cancel';
                         const buttonClass = iteration.isCancelled ? 'btn--secondary' : 'btn--danger';
                         const action = iteration.isCancelled ? 'uncancel' : 'cancel';
+                        
+                        // Generate participants badges
+                        let participantsBadges = '';
+                        let totalParticipants = 0;
+                        
+                        if (event.subscriptions && event.subscriptions.length > 0) {
+                            totalParticipants = event.subscriptions.length;
+                            
+                            // Create badges for each participant (limited to first 5)
+                            const maxDisplayed = 5;
+                            const displayedSubscriptions = event.subscriptions.slice(0, maxDisplayed);
+                            
+                            participantsBadges = displayedSubscriptions.map(sub => {
+                                const user = usersMap.get(sub.userId);
+                                const displayName = user ? (user.nickName || user.email) : 'Unknown';
+                                return `<span class="badge badge-primary badge-sm tooltip" data-tip="${user?.email || 'Unknown'}">${displayName}</span>`;
+                            }).join(' ');
+                            
+                            // Add indicator for additional participants
+                            if (totalParticipants > maxDisplayed) {
+                                const remaining = totalParticipants - maxDisplayed;
+                                participantsBadges += `<span class="badge badge-secondary badge-sm">+${remaining} more</span>`;
+                            }
+                        }
+                        
                         return `
                             <li class="iteration-item ${statusClass}">
-                                <span>${event.title} - ${formatDate(iteration.date)}</span>
-                                <div class="list-item-actions button-group">
-                                    <button class="btn ${buttonClass} btn--small" onclick="ui.canManageEvents.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex justify-between items-center">
+                                        <span>${event.title} - ${formatDate(iteration.date)}</span>
+                                        <div class="list-item-actions button-group">
+                                            <button class="btn ${buttonClass} btn--small" onclick="ui.canManageEvents.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
+                                        </div>
+                                    </div>
+                                    <div class="participants-section">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-accent badge-lg">${totalParticipants} Participants</span>
+                                            <div class="participants-badges">
+                                                ${participantsBadges}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </li>
                         `;
@@ -104,7 +141,26 @@ function canManageEvents(vm){
                 const response = await vm.canUseApi.authenticatedFetch('/api/match-events');
                 if (!response.ok) throw new Error('Failed to load match events');
                 const events = await response.json();
-                scope.renderMatchEvents(events);
+                
+                // Load user information for each event's subscriptions
+                const usersMap = new Map();
+                for (const event of events) {
+                    if (event.subscriptions && event.subscriptions.length > 0) {
+                        const userIds = event.subscriptions.map(sub => sub.userId);
+                        console.debug('User IDs for event:', userIds);
+                        
+                        // Fetch user details for each subscription
+                        const usersResponse = await vm.canUseApi.authenticatedFetch('/api/users');
+                        if (usersResponse.ok) {
+                            const users = await usersResponse.json();
+                            users.forEach(user => {
+                                usersMap.set(user._id, user);
+                            });
+                        }
+                    }
+                }
+                
+                scope.renderMatchEvents(events, usersMap);
             } catch (error) {
                 console.error('Failed to load match events:', error);
                 vm.canLog.addLog('error', `❌ ${error.message}`);
