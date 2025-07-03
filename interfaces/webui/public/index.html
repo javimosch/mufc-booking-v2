@@ -160,27 +160,7 @@
 
             <!-- Main Content -->
             <main class="flex-1 overflow-y-auto p-4 md:p-6">
-                <!-- Login Section (Full Screen) -->
-                <div id="login-section" class="card glass-card shadow-xl max-w-md mx-auto animate-fadeInUp">
-                    <div class="card-body">
-                        <h2 class="card-title text-2xl">🔒 Login</h2>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">📧 Email</span>
-                            </label>
-                            <input type="email" id="email-input" placeholder="Enter your email..." class="input input-bordered w-full">
-                        </div>
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">🔑 Password</span>
-                            </label>
-                            <input type="password" id="password-input" placeholder="Enter your password..." class="input input-bordered w-full">
-                        </div>
-                        <div class="card-actions justify-end mt-4">
-                            <button id="login-btn" class="btn btn-primary">Login</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Content placeholder for dashboard view -->
                 
                 <!-- Content Views (Only one is visible at a time) -->
                 
@@ -310,6 +290,19 @@
         </dialog>
     </div>
 
+    <script src="utils/system-utils.js"></script>
+    <script src="utils/date-utils.js"></script>
+    <script src="services/event-service.js"></script>
+    <script src="composables/can-compose.js"></script>
+    <script src="composables/can-log.js"></script>
+    <script src="composables/can-use-api.js"></script>
+    <script src="composables/can-manage-users.js"></script>
+    <script src="composables/can-manage-account.js"></script>
+    <script src="composables/can-show-modal.js"></script>
+    <script src="composables/can-manage-events.js"></script>
+    <script src="composables/can-manage-orgs.js"></script>
+    <script src="composables/use-navigation.js"></script>
+    <script src="composables/use-dashboard.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
