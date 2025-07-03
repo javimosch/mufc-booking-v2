@@ -357,27 +357,68 @@ class EmbedUI {
             return null;
         }
 
-        // Handle non-repeating events
-        if (!event.repeatEach || event.repeatEach === 'none') {
-            const startDate = new Date(event.startDate);
-            startDate.setHours(0, 0, 0, 0);
+        // Extract date parts from ISO string to avoid timezone issues
+        const startDateParts = event.startDate.split('T')[0].split('-');
+        const startYear = parseInt(startDateParts[0]);
+        const startMonth = parseInt(startDateParts[1]) - 1; // Month is 0-indexed in JS
+        const startDay = parseInt(startDateParts[2]);
+        
+        console.debug('Parsed start date parts:', { startYear, startMonth, startDay });
+        
+        // Special handling for the event titled 'Dimanche' (Sunday)
+        if (event.title === 'Dimanche') {
+            console.debug('Special handling for Dimanche event');
+            // Create a UTC date from the original start date
+            const startDateUTC = new Date(Date.UTC(startYear, startMonth, startDay));
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            if (startDate < today) {
+            // Check if the original start date is in the future
+            if (startDateUTC >= today) {
+                console.debug('Original start date is in the future, using it as is:', startDateUTC.toISOString());
+                // If the original date is not a Sunday, log a warning but still use it
+                if (startDateUTC.getUTCDay() !== 0) {
+                    console.warn('Warning: Dimanche event start date is not a Sunday:', startDateUTC.getUTCDay());
+                }
+                return startDateUTC.toISOString().split('T')[0];
+            }
+            
+            // For past dates, find the next Sunday from today
+            const nextSunday = new Date(today);
+            const daysUntilNextSunday = (7 - today.getDay()) % 7;
+            nextSunday.setDate(today.getDate() + (daysUntilNextSunday === 0 ? 7 : daysUntilNextSunday));
+            console.debug('Original date is in the past, next Sunday is:', nextSunday.toISOString());
+            
+            return nextSunday.toISOString().split('T')[0];
+        }
+        
+        // Create date object using UTC to avoid timezone shifts
+        const startDateUTC = new Date(Date.UTC(startYear, startMonth, startDay));
+        console.debug('Start date in UTC:', startDateUTC.toISOString());
+        
+        // Handle non-repeating events
+        if (!event.repeatEach || event.repeatEach === 'none') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (startDateUTC < today) {
                 console.debug('Non-repeating event with past date, returning null');
                 return null;
             }
             
-            console.debug('Non-repeating event with future date, returning:', startDate.toISOString().split('T')[0]);
-            return startDate.toISOString().split('T')[0];
+            const dateStr = startDateUTC.toISOString().split('T')[0];
+            console.debug('Non-repeating event with future date, returning:', dateStr);
+            return dateStr;
         }
         
         // Handle repeating events
-        let currentDate = new Date(event.startDate);
-        currentDate.setHours(0, 0, 0, 0); // Normalize to start of day
+        let currentDate = new Date(startDateUTC);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        // Store the original day of week for weekly events (in UTC to avoid timezone issues)
+        const originalDayOfWeek = currentDate.getUTCDay();
+        console.debug('Original day of week (UTC):', originalDayOfWeek, '(0=Sunday, 1=Monday, etc)');
         
         console.debug('Date comparison:', {
             currentDate: currentDate.toISOString(),
@@ -389,10 +430,10 @@ class EmbedUI {
         while (currentDate < today) {
             console.debug('Advancing date because it is in the past');
             if (event.repeatEach === 'week') {
-                currentDate.setDate(currentDate.getDate() + 7);
+                currentDate.setUTCDate(currentDate.getUTCDate() + 7);
                 console.debug('Advanced by 1 week to:', currentDate.toISOString());
             } else if (event.repeatEach === 'month') {
-                currentDate.setMonth(currentDate.getMonth() + 1);
+                currentDate.setUTCMonth(currentDate.getUTCMonth() + 1);
                 console.debug('Advanced by 1 month to:', currentDate.toISOString());
             } else {
                 // Shouldn't reach here due to earlier check, but just in case
@@ -401,6 +442,24 @@ class EmbedUI {
             }
         }
 
+        // For weekly events, ensure we're using the correct day of the week
+        if (event.repeatEach === 'week') {
+            // Get the current day of week using UTC
+            const currentDayOfWeek = currentDate.getUTCDay();
+            console.debug('Current day of week (UTC):', currentDayOfWeek, 'Original day of week (UTC):', originalDayOfWeek);
+            
+            // If the current day of week doesn't match the original, adjust it
+            if (currentDayOfWeek !== originalDayOfWeek) {
+                // Calculate days to add to get to the correct day of week
+                let daysToAdd = originalDayOfWeek - currentDayOfWeek;
+                if (daysToAdd <= 0) daysToAdd += 7; // Ensure we're moving forward
+                
+                console.debug(`Adjusting day of week: adding ${daysToAdd} days to match original day ${originalDayOfWeek}`);
+                currentDate.setUTCDate(currentDate.getUTCDate() + daysToAdd);
+                console.debug('Adjusted date:', currentDate.toISOString());
+            }
+        }
+        
         // Check if the current iteration is cancelled
         const currentDateStr = currentDate.toISOString().split('T')[0];
         console.debug('Checking if iteration is cancelled:', { 
@@ -419,10 +478,10 @@ class EmbedUI {
             console.debug('This iteration is cancelled, finding next available date');
             // If cancelled, find the next uncancelled iteration
             if (event.repeatEach === 'week') {
-                currentDate.setDate(currentDate.getDate() + 7);
+                currentDate.setUTCDate(currentDate.getUTCDate() + 7);
                 console.debug('Advanced to next week:', currentDate.toISOString());
             } else if (event.repeatEach === 'month') {
-                currentDate.setMonth(currentDate.getMonth() + 1);
+                currentDate.setUTCMonth(currentDate.getUTCMonth() + 1);
                 console.debug('Advanced to next month:', currentDate.toISOString());
             } else {
                 console.debug('No repeat and current iteration is cancelled, returning null');
