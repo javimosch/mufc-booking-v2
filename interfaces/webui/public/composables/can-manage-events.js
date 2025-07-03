@@ -48,7 +48,7 @@ function canManageEvents(vm){
                             <li class="iteration-item ${statusClass}">
                                 <span>${event.title} - ${formatDate(iteration.date)}</span>
                                 <div class="list-item-actions button-group">
-                                    <button class="btn ${buttonClass} btn--small" onclick="ui.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
+                                    <button class="btn ${buttonClass} btn--small" onclick="ui.canManageEvents.toggleCancelEventIteration('${event._id}', '${iteration.date}', '${action}')">${buttonText}</button>
                                 </div>
                             </li>
                         `;
@@ -64,7 +64,7 @@ function canManageEvents(vm){
                         <p>Start Date: ${formatDate(event.startDate)}</p>
                     </div>
                     <div class="list-item-actions button-group">
-                        <button class="btn btn--danger" onclick="ui.showDeleteEventModal('${event._id}', '${event.title}')">Delete Event</button>
+                        <button class="btn btn--danger" onclick="ui.canManageEvents.showDeleteEventModal('${event._id}', '${event.title}')">Delete Event</button>
                     </div>
                     <div class="event-iterations">
                         <h4>Upcoming Iterations:</h4>

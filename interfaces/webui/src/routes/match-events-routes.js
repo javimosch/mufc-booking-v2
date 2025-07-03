@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/auth-middleware');
 // Create match event
 router.post('/', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { title, startDate, repeatEach } = req.body;
         const newEvent = new MatchEvent({
             title,
@@ -23,10 +24,11 @@ router.post('/', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) =>
 // Join user to event
 router.post('/:eventId/join', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
         const { userId } = req.body;
 
-        const event = await global.mongoose.MatchEvent.findById(eventId);
+        const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
@@ -49,10 +51,11 @@ router.post('/:eventId/join', authMiddleware(['orgAdmin', 'superAdmin']), async 
 // Un-join user from event
 router.post('/:eventId/unjoin', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
         const { userId } = req.body;
 
-        const event = await global.mongoose.MatchEvent.findById(eventId);
+        const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
@@ -76,10 +79,11 @@ router.post('/:eventId/unjoin', authMiddleware(['orgAdmin', 'superAdmin']), asyn
 // Cancel match event iteration
 router.post('/:eventId/cancel', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
         const { date } = req.body;
 
-        const event = await global.mongoose.MatchEvent.findById(eventId);
+        const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
@@ -108,10 +112,11 @@ router.post('/:eventId/cancel', authMiddleware(['orgAdmin', 'superAdmin']), asyn
 // Uncancel match event iteration
 router.post('/:eventId/uncancel', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
         const { date } = req.body;
 
-        const event = await global.mongoose.MatchEvent.findById(eventId);
+        const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
@@ -135,7 +140,8 @@ router.post('/:eventId/uncancel', authMiddleware(['orgAdmin', 'superAdmin']), as
 // Get match events
 router.get('/', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
-        const events = await global.mongoose.MatchEvent.find({ organizationId: req.user.organizationId });
+        const MatchEvent = global.mongoose.MatchEvent;
+        const events = await MatchEvent.find({ organizationId: req.user.organizationId });
         // For events without a startDate, use createdAt as a fallback
         const eventsWithStartDates = events.map(event => {
             if (!event.startDate) {
@@ -153,7 +159,8 @@ router.get('/', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => 
 // Get match events count
 router.get('/count', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
-        const count = await global.mongoose.MatchEvent.countDocuments({ organizationId: req.user.organizationId });
+        const MatchEvent = global.mongoose.MatchEvent;
+        const count = await MatchEvent.countDocuments({ organizationId: req.user.organizationId });
         console.debug(`Found ${count} events for organizationId: ${req.user.organizationId}`);
         res.json({ count });
     } catch (error) {
@@ -165,7 +172,8 @@ router.get('/count', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res
 // Get single match event
 router.get('/:eventId', async (req, res) => {
     try {
-        const event = await global.mongoose.MatchEvent.findById(req.params.eventId);
+        const MatchEvent = global.mongoose.MatchEvent;
+        const event = await MatchEvent.findById(req.params.eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
@@ -179,9 +187,10 @@ router.get('/:eventId', async (req, res) => {
 // Delete match event
 router.delete('/:eventId', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
+        const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
 
-        const event = await global.mongoose.MatchEvent.findById(eventId);
+        const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }

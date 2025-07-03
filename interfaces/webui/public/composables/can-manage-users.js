@@ -15,7 +15,7 @@ function canManageUsers(vm){
                 const item = document.createElement('li');
                 let actions = '';
                 if (vm.canManageAccount.userRole === 'superAdmin' && user.role !== 'orgAdmin') {
-                    actions = `<button class="btn btn--secondary" onclick="ui.showPromoteUserModal('${user._id}', '${user.email}')">Promote to Admin</button>`;
+                    actions = `<button class="btn btn--secondary" onclick="ui.canManageUsers.showPromoteUserModal('${user._id}', '${user.email}')">Promote to Admin</button>`;
                 }
                 item.innerHTML = `
                     <div class="list-item-content">

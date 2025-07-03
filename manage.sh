@@ -133,7 +133,7 @@ function deploy_app {
   echo "🐳 Running docker-compose up on remote host..."
   ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} << EOF
   cd ${REMOTE_PATH}
-  docker-compose up -d
+  docker-compose up -d --force-recreate
   echo "⏳ Waiting 5 seconds for containers to start..."
   sleep 5
   echo "📜 Tailing last 100 lines of logs from 'web' service..."
