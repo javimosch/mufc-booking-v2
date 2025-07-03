@@ -82,6 +82,8 @@
             <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center gap-4">
                     <!-- Mobile menu button -->
+                    <button id="mobile-menu-btn" class="btn btn-ghost btn-sm md:hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
@@ -89,6 +91,13 @@
                 </div>
                 <div id="user-controls" class="flex items-center gap-4" style="display: none;">
                     <span id="user-email-display" class="hidden sm:inline-block"></span>
+                    <!-- Activity Log Toggle Button -->
+                    <button id="activity-log-toggle" class="btn btn-sm btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="hidden sm:inline ml-1">Activity</span>
+                    </button>
                     <button id="logout-btn" class="btn btn-sm btn-ghost">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -148,11 +157,7 @@
                     </a>
                 </nav>
                 
-                <!-- Activity Log in Sidebar -->
-                <div class="p-4 mt-4">
-                    <h3 class="text-sm opacity-70 uppercase font-semibold mb-2">Activity Log</h3>
-                    <div id="log-container" class="log-container h-48 overflow-y-auto bg-base-300 rounded-lg p-3 font-mono text-xs"></div>
-                </div>
+                <!-- Activity Log removed from sidebar and moved to right drawer -->
             </aside>
             
             <!-- Mobile Sidebar Overlay -->
@@ -277,6 +282,24 @@
             </main>
         </div>
 
+        <!-- Right Activity Log Drawer -->
+        <div id="activity-log-drawer" class="fixed top-0 right-0 h-full w-80 bg-base-200 shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-30 flex flex-col">
+            <div class="p-4 border-b border-base-300 flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Activity Log</h3>
+                <button id="close-activity-drawer" class="btn btn-sm btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="log-container" class="log-container bg-base-300 rounded-lg p-3 font-mono text-xs h-full"></div>
+            </div>
+        </div>
+        
+        <!-- Activity Log Drawer Overlay -->
+        <div id="activity-drawer-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden"></div>
+
         <!-- Modal -->
         <dialog id="modal" class="modal">
             <div class="modal-box">
@@ -352,6 +375,27 @@
             sidebarOverlay?.addEventListener('click', () => {
                 sidebar.classList.add('hidden');
                 sidebarOverlay.style.display = 'none';
+            });
+            
+            // Activity Log Drawer Toggle
+            const activityLogToggle = document.getElementById('activity-log-toggle');
+            const activityLogDrawer = document.getElementById('activity-log-drawer');
+            const activityDrawerOverlay = document.getElementById('activity-drawer-overlay');
+            const closeActivityDrawer = document.getElementById('close-activity-drawer');
+            
+            activityLogToggle?.addEventListener('click', () => {
+                activityLogDrawer.classList.toggle('translate-x-full');
+                activityDrawerOverlay.classList.toggle('hidden');
+            });
+            
+            closeActivityDrawer?.addEventListener('click', () => {
+                activityLogDrawer.classList.add('translate-x-full');
+                activityDrawerOverlay.classList.toggle('hidden');
+            });
+            
+            activityDrawerOverlay?.addEventListener('click', () => {
+                activityLogDrawer.classList.add('translate-x-full');
+                activityDrawerOverlay.classList.add('hidden');
             });
         });
     </script>

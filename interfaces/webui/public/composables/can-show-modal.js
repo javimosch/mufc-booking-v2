@@ -26,5 +26,8 @@ function canShowModal(vm) {
 
       this.modal.showModal();
     },
+    close() {
+      this.modal.close();
+    }
   };
 }

@@ -1,6 +1,7 @@
 function canLog() {
   const scope = {
     init() {
+      console.debug('Initializing activity log');
       this.logContainer = document.getElementById("log-container");
     },
     addLog(type, message) {
