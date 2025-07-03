@@ -90,5 +90,39 @@ router.put('/:id/role', authMiddleware(['superAdmin']), async (req, res) => {
     }
 });
 
+// Fetch multiple users by IDs
+router.post('/bulk-get', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
+    const WebUIUser = global.mongoose.WebUIUser;
+    try {
+        const { userIds } = req.body;
+        
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({ error: 'User IDs array is required' });
+        }
+        
+        console.debug(`Fetching ${userIds.length} users by ID`);
+        
+        let users;
+        if (req.user.role === 'superAdmin') {
+            // Super admins can fetch any users
+            users = await WebUIUser.find({
+                _id: { $in: userIds }
+            }).select('-password');
+        } else {
+            // Org admins can only fetch users in their organization
+            users = await WebUIUser.find({
+                _id: { $in: userIds },
+                organizationId: req.user.organizationId
+            }).select('-password');
+        }
+        
+        console.debug(`Found ${users.length} users by ID`);
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users by ID:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 module.exports = router;

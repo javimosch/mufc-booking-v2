@@ -2,12 +2,16 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// Public join event
+// Public join event iteration
 router.post('/match-events/:eventId/join', async (req, res) => {
     try {
         const WebUIUser = global.mongoose.WebUIUser;
         const { eventId } = req.params;
-        const { email, nickname } = req.body;
+        const { email, nickname, iterationDate } = req.body;
+
+        if (!iterationDate) {
+            return res.status(400).json({ error: 'Iteration date is required' });
+        }
 
         let user = await WebUIUser.findOne({ email });
         if (!user) {
@@ -26,11 +30,12 @@ router.post('/match-events/:eventId/join', async (req, res) => {
             return res.status(404).json({ error: 'Match Event not found' });
         }
 
-        if (event.subscriptions.some(sub => sub.userId.equals(user._id))) {
-            return res.status(400).json({ error: 'User is already subscribed to this event' });
+        // Check if user is already subscribed to this specific iteration
+        if (event.subscriptions.some(sub => sub.userId.equals(user._id) && sub.iterationDate === iterationDate)) {
+            return res.status(400).json({ error: 'User is already subscribed to this event iteration' });
         }
 
-        event.subscriptions.push({ userId: user._id, metadata: { nickname } });
+        event.subscriptions.push({ userId: user._id, iterationDate, metadata: { nickname } });
         await event.save();
 
         res.json({ success: true });
@@ -40,12 +45,16 @@ router.post('/match-events/:eventId/join', async (req, res) => {
     }
 });
 
-// Public un-join event
+// Public un-join event iteration
 router.post('/match-events/:eventId/unjoin', async (req, res) => {
     try {
         const WebUIUser = global.mongoose.WebUIUser;
         const { eventId } = req.params;
-        const { email } = req.body;
+        const { email, iterationDate } = req.body;
+
+        if (!iterationDate) {
+            return res.status(400).json({ error: 'Iteration date is required' });
+        }
 
         const user = await WebUIUser.findOne({ email });
         if (!user) {
@@ -58,10 +67,12 @@ router.post('/match-events/:eventId/unjoin', async (req, res) => {
         }
 
         const initialLength = event.subscriptions.length;
-        event.subscriptions = event.subscriptions.filter(sub => !sub.userId.equals(user._id));
+        event.subscriptions = event.subscriptions.filter(sub => 
+            !(sub.userId.equals(user._id) && sub.iterationDate === iterationDate)
+        );
 
         if (event.subscriptions.length === initialLength) {
-            return res.status(400).json({ error: 'User was not subscribed to this event' });
+            return res.status(400).json({ error: 'User was not subscribed to this event iteration' });
         }
 
         await event.save();
@@ -133,4 +144,31 @@ router.get('/match-events', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// Get single public match event by ID
+router.get('/match-events/:eventId', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        console.debug('Getting public match event by ID:', eventId);
+        
+        // Validate if eventId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            console.debug('Invalid ObjectId format for eventId:', eventId);
+            return res.status(404).json({ error: 'Match Event not found' });
+        }
+        
+        const event = await global.mongoose.MatchEvent.findById(eventId);
+        if (!event) {
+            console.debug('No event found with ID:', eventId);
+            return res.status(404).json({ error: 'Match Event not found' });
+        }
+        
+        console.debug('Found event:', event.title);
+        res.json(event);
+    } catch (error) {
+        console.error('Get public match event by ID error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

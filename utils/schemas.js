@@ -37,6 +37,7 @@ const matchEventSchema = new mongoose.Schema({
   repeatEach: { type: String, enum: ['none', 'week', 'month'], default: 'none' },
   subscriptions: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'WebUIUser' },
+    iterationDate: { type: String, required: true }, // Store the specific iteration date (YYYY-MM-DD)
     metadata: mongoose.Schema.Types.Mixed,
   }],
   metadata: mongoose.Schema.Types.Mixed,

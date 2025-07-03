@@ -21,24 +21,28 @@ router.post('/', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) =>
     }
 });
 
-// Join user to event
+// Join user to event iteration
 router.post('/:eventId/join', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
-        const { userId } = req.body;
+        const { userId, iterationDate } = req.body;
+
+        if (!iterationDate) {
+            return res.status(400).json({ error: 'Iteration date is required' });
+        }
 
         const event = await MatchEvent.findById(eventId);
         if (!event) {
             return res.status(404).json({ error: 'Match Event not found' });
         }
 
-        // Check if user is already subscribed
-        if (event.subscriptions.some(sub => sub.userId.equals(userId))) {
-            return res.status(400).json({ error: 'User is already subscribed to this event' });
+        // Check if user is already subscribed to this specific iteration
+        if (event.subscriptions.some(sub => sub.userId.equals(userId) && sub.iterationDate === iterationDate)) {
+            return res.status(400).json({ error: 'User is already subscribed to this event iteration' });
         }
 
-        event.subscriptions.push({ userId, metadata: {} });
+        event.subscriptions.push({ userId, iterationDate, metadata: {} });
         await event.save();
 
         res.json({ success: true });
@@ -48,12 +52,16 @@ router.post('/:eventId/join', authMiddleware(['orgAdmin', 'superAdmin']), async 
     }
 });
 
-// Un-join user from event
+// Un-join user from event iteration
 router.post('/:eventId/unjoin', authMiddleware(['orgAdmin', 'superAdmin']), async (req, res) => {
     try {
         const MatchEvent = global.mongoose.MatchEvent;
         const { eventId } = req.params;
-        const { userId } = req.body;
+        const { userId, iterationDate } = req.body;
+
+        if (!iterationDate) {
+            return res.status(400).json({ error: 'Iteration date is required' });
+        }
 
         const event = await MatchEvent.findById(eventId);
         if (!event) {
@@ -61,10 +69,12 @@ router.post('/:eventId/unjoin', authMiddleware(['orgAdmin', 'superAdmin']), asyn
         }
 
         const initialLength = event.subscriptions.length;
-        event.subscriptions = event.subscriptions.filter(sub => !sub.userId.equals(userId));
+        event.subscriptions = event.subscriptions.filter(sub => 
+            !(sub.userId.equals(userId) && sub.iterationDate === iterationDate)
+        );
 
         if (event.subscriptions.length === initialLength) {
-            return res.status(400).json({ error: 'User was not subscribed to this event' });
+            return res.status(400).json({ error: 'User was not subscribed to this event iteration' });
         }
 
         await event.save();
