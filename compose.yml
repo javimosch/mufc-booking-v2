@@ -10,7 +10,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env
+      - .env.production
     command: ["npm", "run", "web"]
 
       
