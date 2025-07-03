@@ -124,7 +124,7 @@ function deploy_app {
     return 1
   fi
   
-  echo "🔧 Ensuring remote directory exists at ${REMOTE_USER}:${REMOTE_HOST}:${REMOTE_PATH}..."
+  echo "🔧 Ensuring remote directory exists at ${REMOTE_PORT} ${REMOTE_USER}:${REMOTE_HOST}:${REMOTE_PATH}..."
   ssh -p $REMOTE_PORT ${REMOTE_USER}@${REMOTE_HOST} "cd ${REMOTE_PATH} && pwd && mkdir -p ${REMOTE_PATH}"
   
   echo "📦 Syncing local files from ${LOCAL_PATH} to remote..."

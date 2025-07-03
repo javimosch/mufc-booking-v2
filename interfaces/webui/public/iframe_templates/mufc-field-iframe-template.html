@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad Call-Up - Montpellier United FC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0f1419;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Preserve the original iframe-body class for embed-ui.js */
+        .iframe-body {
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            color: #fff;
+            background: transparent;
+            font-size: 1rem;
+        }
+
+        /* Preserve app-container class for embed-ui.js */
+        .app-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: fit-content;
+            padding: 1vw;
+        }
+
+        /* Preserve main-content class for embed-ui.js */
+        .main-content {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Preserve card class for embed-ui.js but with new styling */
+        .card {
+            background: transparent;
+            border-radius: 0.5vw;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        /* Stadium floodlights effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 193, 7, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 30%, rgba(44, 82, 130, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .squad-container {
+            max-width: 900px;
+            margin: 0 auto;
+            perspective: 1000px;
+        }
+
+        .call-up-sheet {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            border-radius: 20px;
+            padding: 3px;
+            position: relative;
+            transform: rotateX(5deg) rotateY(-2deg);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 193, 7, 0.2);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: rotateX(5deg) rotateY(-2deg) translateY(0px); }
+            50% { transform: rotateX(5deg) rotateY(-2deg) translateY(-10px); }
+        }
+
+        .call-up-document {
+            background: #ffffff;
+            border-radius: 17px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: linear-gradient(45deg, #1a365d 0%, #2c5282 50%, #ffc107 100%);
+            color: white;
+            padding: 25px;
+            position: relative;
+            clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pitch" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="20" height="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23pitch)"/></svg>');
+        }
+
+        .club-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .club-badge {
+            background: rgba(255, 193, 7, 0.2);
+            border: 2px solid #ffc107;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .match-id {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            padding: 40px;
+            background: white;
+            position: relative;
+        }
+
+        /* Team sheet perforated edge */
+        .main-content::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50px;
+            right: 50px;
+            height: 30px;
+            background: 
+                radial-gradient(circle at 15px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 45px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 75px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 105px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 135px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 165px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 195px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 225px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 255px 15px, transparent 8px, white 8px),
+                radial-gradient(circle at 285px 15px, transparent 8px, white 8px);
+            background-size: 30px 30px;
+        }
+
+        .tactical-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .formation-display {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px dashed #2c5282;
+            position: relative;
+        }
+
+        .formation-display h3 {
+            color: #1a365d;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .football-pitch {
+            background: linear-gradient(to bottom, #10b981 0%, #059669 100%);
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            min-height: 200px;
+            border: 2px solid white;
+        }
+
+        .football-pitch::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        .football-pitch::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: white;
+        }
+
+        .player-positions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .position-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .player-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffc107;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #1a365d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-dot:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
+        }
+
+        .player-dot.available {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Preserve event-details id for embed-ui.js but with new styling */
+        #event-details {
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #event-details::before {
+            content: '⚽';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 80px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        #event-details h2 {
+            color: #ffc107;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .detail-label {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #ffc107;
+        }
+
+        /* Preserve form-group class for embed-ui.js but with new styling */
+        .form-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        /* Preserve label class for embed-ui.js but with new styling */
+        .label {
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            background: white;
+            color: #1a365d;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 0 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+        }
+
+        /* Preserve input class for embed-ui.js but with new styling */
+        .input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #2c5282;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .input:focus, select:focus {
+            outline: none;
+            border-color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+        }
+
+        .player-registration {
+            background: linear-gradient(45deg, #f8fafc 0%, #ffffff 100%);
+            border: 2px solid #2c5282;
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            margin: 30px 0;
+        }
+
+        .player-registration::before {
+            content: 'PLAYER REGISTRATION';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #ffc107;
+            color: #1a365d;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Preserve btn classes for embed-ui.js but with new styling */
+        .squad-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn--primary {
+            background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+            color: white;
+            border: 2px solid #ffc107;
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(44, 82, 130, 0.3);
+        }
+
+        .btn--danger {
+            background: white;
+            color: #1a365d;
+            border: 2px solid #2c5282;
+        }
+
+        .btn--danger:hover {
+            background: #f8fafc;
+            transform: translateY(-3px);
+        }
+
+        /* Preserve joined-users-section class for embed-ui.js but with new styling */
+        .joined-users-section {
+            background: #0f1419;
+            color: #ffc107;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #2c5282;
+        }
+
+        .roster-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2c5282;
+        }
+
+        .roster-title {
+            color: #ffc107;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Preserve participant-count id for embed-ui.js but with new styling */
+        #participant-count {
+            background: #2c5282;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        #participant-count-inner {
+            font-weight: 600;
+        }
+
+        /* Preserve joined-users-list id for embed-ui.js but with new styling */
+        #joined-users-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        #joined-users-list ul {
+            list-style: none;
+        }
+
+        #joined-users-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px dotted #2c5282;
+        }
+
+        #joined-users-list .list-item-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        #joined-users-list .list-item-content::before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffc107 0%, #f59e0b 100%);
+            color: #1a365d;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        #joined-users-list .list-item-content span {
+            color: white;
+            font-weight: bold;
+        }
+
+        .position-badge {
+            background: #2c5282;
+            color: #ffc107;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            margin-left: 10px;
+        }
+
+        /* Preserve heading--section class for embed-ui.js but with new styling */
+        .heading--section {
+            color: #ffc107;
+            margin-bottom: 15px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Preserve multi-event-mode and events-list ids for embed-ui.js */
+        #multi-event-mode {
+            display: none;
+        }
+
+        #events-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Language selector styling */
+        .language-selector-group {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        #language-select {
+            background: rgba(255, 193, 7, 0.9);
+            border: none;
+            color: #1a365d;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .tactical-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .squad-actions {
+                flex-direction: column;
+            }
+
+            .call-up-sheet {
+                transform: none;
+            }
+
+            .main-content::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="iframe-body">
+    <div class="app-container">
+        <main class="main-content">
+            <div id="embed-section" class="card">
+                <div id="single-event-mode">
+                    <div class="squad-container">
+                        <div class="call-up-sheet">
+                            <div class="call-up-document">
+                                <div class="header-section">
+                                    <div class="club-header">
+                                        <div class="club-badge">Montpellier United FC</div>
+                                        <div class="form-group language-selector-group">
+                                            <select id="language-select" class="input">
+                                                <option value="fr">🇫🇷 FR</option>
+                                                <option value="en">🇬🇧 EN</option>
+                                                <option value="es">🇪🇸 ES</option>
+                                                <option value="pr">🇵🇹 PT</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="main-content">
+                                    <div class="tactical-section">
+                                        <div class="formation-display">
+                                            <h3>⚽ Formation 4-4-2</h3>
+                                            <div class="football-pitch">
+                                                <div class="player-positions">
+                                                    <div class="position-row">
+                                                        <div class="player-dot">GK</div>
+                                                    </div>
+                                                    <div class="position-row">
+                                                        <div class="player-dot">LB</div>
+                                                        <div class="player-dot">CB</div>
+                                                        <div class="player-dot">CB</div>
+                                                        <div class="player-dot">RB</div>
+                                                    </div>
+                                                    <div class="position-row">
+                                                        <div class="player-dot">LM</div>
+                                                        <div class="player-dot">CM</div>
+                                                        <div class="player-dot">CM</div>
+                                                        <div class="player-dot">RM</div>
+                                                    </div>
+                                                    <div class="position-row">
+                                                        <div class="player-dot available">?</div>
+                                                        <div class="player-dot">ST</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="event-details">
+                                            <!-- Event details will be populated by embed-ui.js -->
+                                        </div>
+                                    </div>
+
+                                    <div class="player-registration">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label class="label" for="nickname-input">Player Name</label>
+                                                <input type="text" id="nickname-input" class="input" placeholder="ENTREZ VOTRE SURNOM">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="label" for="embed-email-input">Contact Email</label>
+                                                <input type="email" id="embed-email-input" class="input" placeholder="VOTRE.EMAIL@DOMAIN.COM">
+                                            </div>
+                                        </div>
+
+                                        <div class="squad-actions">
+                                            <button id="join-btn" class="btn btn--primary">🏃‍♂️ JOIN SQUAD</button>
+                                            <button id="unjoin-btn" class="btn btn--danger">❌ WITHDRAW</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="joined-users-section">
+                                        <div class="roster-header">
+                                            <div class="roster-title">▶ Team Roster</div>
+                                            <div id="participant-count"></div>
+                                        </div>
+                                        <div id="joined-users-list">
+                                            <!-- Joined users will be populated by embed-ui.js -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="multi-event-mode">
+                    <div class="header-section">
+                        <div class="club-header">
+                            <div class="club-badge">Match Events</div>
+                        </div>
+                    </div>
+                    <div class="main-content">
+                        <div class="form-group">
+                            <input type="text" id="search-input" class="input" placeholder="Search events...">
+                        </div>
+                        <div id="events-list"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="embed-ui.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const playerDots = document.querySelectorAll('.player-dot');
+            
+            // Animate available positions
+            setInterval(() => {
+                const availableDots = document.querySelectorAll('.player-dot.available');
+                availableDots.forEach(dot => {
+                    dot.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        dot.style.transform = 'scale(1)';
+                    }, 300);
+                });
+            }, 2000);
+
+            // Add player interaction to formation
+            playerDots.forEach(dot => {
+                dot.addEventListener('click', function() {
+                    if (this.classList.contains('available')) {
+                        this.innerHTML = '👤';
+                        this.classList.remove('available');
+                        this.style.background = '#ffc107';
+                        
+                        // Simulate joining animation
+                        const joinBtn = document.getElementById('join-btn');
+                        joinBtn.click();
+                    }
+                });
+            });
+
+            // Add typing effect to inputs
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.style.letterSpacing = '1px';
+                    this.style.textTransform = 'uppercase';
+                });
+            });
+            
+            // Debug log for embed-ui.js integration
+            console.debug('mufc-field-iframe-template loaded and initialized');
+        });
+    </script>
+</body>
+</html>
