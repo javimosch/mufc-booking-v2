@@ -4,7 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MUFC Booking - Embed</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        html {
+            font-size: 24px; /* 2x smaller than previous (was 48px) */
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .iframe-body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: transparent;
+            font-size: 1rem;
+        }
+        
+        /* Container styling */
+        .app-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            min-height: fit-content;
+            padding: 1vw;
+        }
+        
+        .main-content {
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        /* Card styling */
+        .card {
+            background: #fff;
+            border-radius: 0.5vw;
+            box-shadow: 0 0.1vw 0.3vw rgba(0, 0, 0, 0.1);
+            padding: 1vw;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+        
+        /* Form elements */
+        .form-group {
+            margin-bottom: 0.6vw;
+        }
+        
+        .label {
+            display: block;
+            margin-bottom: 0.2vw;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #444;
+        }
+        
+        .input, select {
+            width: 100%;
+            padding: 0.35vw 0.5vw;
+            border: 1px solid #ddd;
+            border-radius: 0.25vw;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+        
+        .input:focus, select:focus {
+            border-color: #c70101;
+            outline: none;
+            box-shadow: 0 0 0 0.1vw rgba(199, 1, 1, 0.1);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.35vw 1vw;
+            border: none;
+            border-radius: 0.25vw;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 0.5vw;
+            margin-bottom: 0.5vw;
+        }
+        
+        .btn--primary {
+            background-color: #c70101;
+            color: white;
+        }
+        
+        .btn--primary:hover {
+            background-color: #a70000;
+            transform: translateY(-0.1vw);
+        }
+        
+        .btn--danger {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .btn--danger:hover {
+            background-color: #d32f2f;
+            transform: translateY(-0.1vw);
+        }
+        
+        /* Headings */
+        .heading--section {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5vw;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.25vw;
+        }
+        
+        /* Event details */
+        #event-details {
+            background-color: #f9f9f9;
+            padding: 0.5vw;
+            border-radius: 0.25vw;
+            margin-bottom: 0.5vw;
+            font-size: 0.8rem;
+        }
+        
+        /* Joined users section */
+        .joined-users-section {
+            margin-top: 0.75vw;
+            padding-top: 0.5vw;
+            border-top: 1px solid #eee;
+        }
+        
+        .joined-users-section h3 {
+            font-size: 1rem;
+            margin-bottom: 0.35vw;
+        }
+        
+        #joined-users-list {
+            max-height: 5vw;
+            overflow-y: auto;
+            margin-bottom: 0.35vw;
+        }
+        
+        #participant-count {
+            font-size: 0.8rem;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Language selector specific */
+        .language-selector-group {
+            margin-bottom: 0.6vw;
+        }
+        
+        /* Events list */
+        #events-list {
+            max-height: 15vw;
+            overflow-y: auto;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            html {
+                font-size: 12px;
+            }
+            .app-container {
+                padding: 1vw 0.5vw;
+            }
+            .card {
+                padding: 0.5vw;
+            }
+        }
+    </style>
 </head>
 <body class="iframe-body">
     <div class="app-container">
@@ -48,7 +221,8 @@
             </div>
         </main>
     </div>
+    
     <script src="embed-ui.js"></script>
-    <script src="app.js"></script>
+    
 </body>
 </html>
