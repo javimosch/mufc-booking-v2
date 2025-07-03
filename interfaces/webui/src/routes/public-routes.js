@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 // Public join event
 router.post('/match-events/:eventId/join', async (req, res) => {
     try {
+        const WebUIUser = global.mongoose.WebUIUser;
         const { eventId } = req.params;
         const { email, nickname } = req.body;
 
@@ -42,6 +43,7 @@ router.post('/match-events/:eventId/join', async (req, res) => {
 // Public un-join event
 router.post('/match-events/:eventId/unjoin', async (req, res) => {
     try {
+        const WebUIUser = global.mongoose.WebUIUser;
         const { eventId } = req.params;
         const { email } = req.body;
 
@@ -74,6 +76,7 @@ router.post('/match-events/:eventId/unjoin', async (req, res) => {
 // Get public match events
 router.get('/match-events', async (req, res) => {
     try {
+        const WebUIUser = global.mongoose.WebUIUser;
         const { organizationId } = req.query;
         
         // Enhanced validation and debugging
@@ -104,6 +107,7 @@ router.get('/match-events', async (req, res) => {
 // Get public match events
 router.get('/match-events', async (req, res) => {
     try {
+        const WebUIUser = global.mongoose.WebUIUser;
         const { organizationId } = req.query;
         
         // Enhanced validation and debugging
