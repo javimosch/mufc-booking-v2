@@ -178,7 +178,7 @@ function deploy_domain {
   echo "📦 Copying Traefik configuration to remote server..."
   
   # Copy the proxy file directly to the remote server
-  scp -P $DOMAIN_REMOTE_PORT "${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}" ${DOMAIN_REMOTE_USER}@${DOMAIN_REMOTE_HOST}:${DOMAIN_REMOTE_TRAEFIK_PATH}/
+  scp -P $DOMAIN_REMOTE_PORT "${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}" ${DOMAIN_REMOTE_USER}@${DOMAIN_REMOTE_HOST}:${DOMAIN_REMOTE_TRAEFIK_PATH}/${REMOTE_DOMAIN_CONFIG_FILENAME}
   
   echo "🔄 Verifying file was copied successfully..."
   ssh -p $DOMAIN_REMOTE_PORT ${DOMAIN_REMOTE_USER}@${DOMAIN_REMOTE_HOST} "ls -la ${DOMAIN_REMOTE_TRAEFIK_PATH}/${REMOTE_DOMAIN_CONFIG_FILENAME}"
@@ -333,19 +333,31 @@ function create_proxy_file {
   
   # Create proxy file from template
   echo "🔧 Creating proxy file ${DOMAIN_CONFIG_FILE}..."
+
+    # Print variables to inject
+  echo "Service name: $SERVICE_NAME"
+  echo "Published domain: $PUBLISHED_DOMAIN"
+  echo "Remote service IP: $REMOTE_SERVICE_IP"
   
   # Replace placeholders in template
-  echo "$TRAEFIK_TEMPLATE" | \
-    sed "s/SERVICE_NAME/$SERVICE_NAME/g" | \
-    sed "s/_PUBLISHED_DOMAIN_/$PUBLISHED_DOMAIN/g" | \
-    sed "s|REMOTE_SERVICE_IP|$REMOTE_SERVICE_IP|g" > "${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}"
+  # Use a temporary file to avoid issues with special characters in variables
+  TEMP_TEMPLATE="${LOCAL_PATH}/.temp_template.yml"
+  echo "$TRAEFIK_TEMPLATE" > "$TEMP_TEMPLATE"
+  
+  # Replace placeholders one by one with proper escaping
+  sed -i "s|SERVICE_NAME|${SERVICE_NAME}|g" "$TEMP_TEMPLATE"
+  sed -i "s|_PUBLISHED_DOMAIN_|${PUBLISHED_DOMAIN}|g" "$TEMP_TEMPLATE"
+  sed -i "s|REMOTE_SERVICE_IP|${REMOTE_SERVICE_IP}|g" "$TEMP_TEMPLATE"
+  
+  # Move the processed template to the final destination
+  mv "$TEMP_TEMPLATE" "${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}"
   
   echo "✅ Proxy file created successfully at ${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}"
   echo "Preview of the proxy file:"
   echo "------------------------"
   cat "${LOCAL_PATH}/${DOMAIN_CONFIG_FILE}"
   echo "------------------------"
-  
+
   return 0
 }
 

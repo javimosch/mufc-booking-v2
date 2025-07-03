@@ -12,4 +12,4 @@ http:
       loadBalancer:
         servers:
           -
-            url: 'http://100.86.93.41:5081'
+            url: 'http://100.86.93.41:5082'
