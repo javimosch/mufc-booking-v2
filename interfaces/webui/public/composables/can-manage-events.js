@@ -236,38 +236,138 @@ function canManageEvents(vm){
                     </select>
                 </div>
             `;
-        },    
+        },
         renderPublicEventLinks(events) {
+            // Clear previous content
+            scope.publicEventLinksContent.innerHTML = '';
+            
             if (events.length === 0) {
-                scope.publicEventLinksContent.innerHTML = '<p>No public event links found.</p>';
+                const emptyState = document.createElement('div');
+                emptyState.className = 'text-center p-6';
+                emptyState.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <p class="mt-2 text-lg">No public event links found.</p>
+                `;
+                scope.publicEventLinksContent.appendChild(emptyState);
                 return;
             }
-            const list = document.createElement('ul');
+            
+            // Create grid container for cards
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 gap-6';
+            
             events.forEach(event => {
                 const organizationId = vm.canManageOrgs.organizationId;
                 const publicLink = `${window.location.origin}/iframe?eventId=${event._id}&organizationId=${organizationId}`;
                 const iframeCode = `<iframe src="${publicLink}" width="600" height="400" frameborder="0"></iframe>`;
-                const item = document.createElement('li');
-                item.innerHTML = `
-                    <div class="list-item-content">
-                        <span>${event.title}: </span>
-                        <a href="${publicLink}" target="_blank">${publicLink}</a>
-                        <div class="code-example">
-                            <textarea class="code-block" readonly>${iframeCode}</textarea>
+                
+                // Create card for each event
+                const card = document.createElement('div');
+                card.className = 'card glass-card shadow-lg';
+                
+                // Create card content
+                card.innerHTML = `
+                    <div class="card-body">
+                        <h3 class="card-title text-lg font-bold">${event.title}</h3>
+                        
+                        <!-- Direct Link Section -->
+                        <div class="mt-3">
+                            <label class="text-sm font-medium opacity-70">Direct Link:</label>
+                            <div class="flex mt-1 rounded-md overflow-hidden bg-base-300 shadow-sm">
+                                <input type="text" value="${publicLink}" readonly class="flex-grow bg-base-300 p-2 text-sm focus:outline-none overflow-x-auto whitespace-nowrap" />
+                                <button class="copy-link-btn p-2 bg-base-300 hover:bg-base-200 transition-colors" data-clipboard-text="${publicLink}" title="Copy Link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Embed Code Section -->
+                        <div class="mt-4">
+                            <label class="text-sm font-medium opacity-70">Embed Code:</label>
+                            <div class="mt-1 relative">
+                                <pre class="bg-base-300 p-3 rounded-md text-xs overflow-x-auto">${iframeCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                                <button class="copy-iframe-btn absolute top-2 right-2 p-1.5 rounded-md bg-base-200 hover:bg-base-100 transition-colors" data-clipboard-text='${iframeCode}' title="Copy Embed Code">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Section -->
+                        <div class="mt-4">
+                            <label class="text-sm font-medium opacity-70">Preview:</label>
+                            <div class="mt-2 border border-base-300 rounded-md p-2 bg-base-300 overflow-hidden">
+                                <div class="aspect-video relative flex items-center justify-center">
+                                    <button class="preview-btn btn btn-sm btn-primary" data-url="${publicLink}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Open Preview
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="list-item-actions button-group">
-                        <button class="btn btn--secondary copy-btn" data-clipboard-text="${iframeCode}">Copy</button>
-                    </div>
                 `;
-                list.appendChild(item);
+                
+                grid.appendChild(card);
             });
-            scope.publicEventLinksContent.innerHTML = '';
-            scope.publicEventLinksContent.appendChild(list);
-    
-            document.querySelectorAll('.copy-btn').forEach(button => {
-                button.addEventListener('click', (event) => copyToClipboard(event.target.dataset.clipboardText));
+            
+            scope.publicEventLinksContent.appendChild(grid);
+            
+            // Add event listeners for copy buttons using proper context
+            const copyLinkButtons = document.querySelectorAll('.copy-link-btn');
+            const copyIframeButtons = document.querySelectorAll('.copy-iframe-btn');
+            const previewButtons = document.querySelectorAll('.preview-btn');
+            
+            copyLinkButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const textToCopy = this.dataset.clipboardText;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        vm.canLog.addLog('success', '✅ Direct link copied to clipboard!');
+                        // Visual feedback
+                        this.classList.add('bg-success', 'text-success-content');
+                        setTimeout(() => {
+                            this.classList.remove('bg-success', 'text-success-content');
+                        }, 1000);
+                    }).catch(err => {
+                        vm.canLog.addLog('error', '❌ Failed to copy link to clipboard.');
+                        console.error('Error copying to clipboard:', err);
+                    });
+                });
             });
+            
+            copyIframeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const textToCopy = this.dataset.clipboardText;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        vm.canLog.addLog('success', '✅ Embed code copied to clipboard!');
+                        // Visual feedback
+                        this.classList.add('bg-success', 'text-success-content');
+                        setTimeout(() => {
+                            this.classList.remove('bg-success', 'text-success-content');
+                        }, 1000);
+                    }).catch(err => {
+                        vm.canLog.addLog('error', '❌ Failed to copy embed code to clipboard.');
+                        console.error('Error copying to clipboard:', err);
+                    });
+                });
+            });
+            
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const url = this.dataset.url;
+                    window.open(url, '_blank');
+                });
+            });
+            
+            console.debug('Public event links rendered:', events.length);
         },
         async addEvent() {
             console.debug('Adding event...');
@@ -298,7 +398,7 @@ function canManageEvents(vm){
                 console.error('Failed to add event:', error);
                 vm.canLog.addLog('error', `❌ ${error.message}`);
             }
-        }       
+        }
     }
     return scope;
 }
