@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Courier New', monospace;
-            background: #0f1419;
+            background: #ffffff;
             min-height: 100vh;
             padding: 20px;
             position: relative;
@@ -24,7 +24,7 @@
         .iframe-body {
             font-family: 'Courier New', monospace;
             line-height: 1.6;
-            color: #fff;
+            color: #333;
             background: transparent;
             font-size: 1rem;
         }
@@ -60,10 +60,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 20%, rgba(255, 193, 7, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 30%, rgba(44, 82, 130, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(255, 193, 7, 0.05) 0%, transparent 50%);
+            /* background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 193, 7, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 30%, rgba(44, 82, 130, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 193, 7, 0.03) 0%, transparent 50%); */
             z-index: -1;
         }
 
@@ -447,13 +447,14 @@
 
         /* Preserve joined-users-section class for embed-ui.js but with new styling */
         .joined-users-section {
-            background: #0f1419;
-            color: #ffc107;
+            background: #f8fafc;
+            color: #1a365d;
             padding: 25px;
             border-radius: 15px;
             margin-top: 30px;
             font-family: 'Courier New', monospace;
             border: 1px solid #2c5282;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .roster-header {
@@ -466,10 +467,11 @@
         }
 
         .roster-title {
-            color: #ffc107;
+            color: #2c5282;
             font-size: 18px;
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-weight: bold;
         }
 
         /* Preserve participant-count id for embed-ui.js but with new styling */
@@ -502,6 +504,7 @@
             align-items: center;
             padding: 12px 0;
             border-bottom: 1px dotted #2c5282;
+            color: #1a365d;
         }
 
         #joined-users-list .list-item-content {
@@ -525,7 +528,7 @@
         }
 
         #joined-users-list .list-item-content span {
-            color: white;
+            color: #2c5282;
             font-weight: bold;
         }
 
